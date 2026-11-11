@@ -55,6 +55,11 @@ public sealed class LegacyPalladiumWorld : IAsyncLifetime
         }
         await db.Zones.Where(z => z.FloorId == FloorId && z.Code == "B04").ExecuteDeleteAsync();
         await db.FloorPlanElements.Where(e => e.FloorId == FloorId && e.Label == "36-B-04 Bölge Müdürü").ExecuteDeleteAsync();
+        // Guncel seed Anadolu Bolge Mudurlugu yerlesimiyle gelir; formdan onceki kroki (36-A-04 ogesi var, Anadolu alani yok) geri kurulur.
+        await db.FloorPlanElements.Where(e => e.FloorId == FloorId && e.Label == PalladiumPlan.AnadoluAreaName).ExecuteDeleteAsync();
+        var a04 = PalladiumPlan.RectFromPx(652, 2600, 1036, 3210);
+        db.FloorPlanElements.Add(new FloorPlanElement { FloorId = FloorId, Type = "RESTRICTED", Label = "36-A-04 Bölge Müdürü", X = a04.X, Y = a04.Y, Width = a04.Width, Height = a04.Height, LayerOrder = 150 });
+        await db.SaveChangesAsync();
 
         var room = new MeetingRoom { Code = PalladiumFormUpdater.ClosedRoomCode, Name = "Çamlıca", FloorId = FloorId, Capacity = 8, X = RoomX, Y = 998, Width = 158, Height = 252, Placed = true, Active = true };
         db.MeetingRooms.Add(room);

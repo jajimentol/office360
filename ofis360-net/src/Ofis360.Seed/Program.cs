@@ -10,7 +10,7 @@
 //   scale                     300 calisanlik kurumsal kapasite (additive)
 //   activity [--building=PT] [--departments=SAT,PZR] [--history=60] [--seed=N] [--only=desks|rooms]
 //   buildings                 Demo Bina'yi (pasif, isDemo) olusturur; binasiz kat kalmaz (Oracle semasinda zorunlu alan)
-// Baglanti: OFIS360_CONNECTION ortam degiskeni, yoksa yerel gelistirme semasi (ConnectionStrings.LocalDev).
+// Baglanti: --connection="User Id=...;Password=...;Data Source=sunucu:1521/SERVIS" ya da OFIS360_CONNECTION ortam degiskeni.
 
 using Microsoft.EntityFrameworkCore;
 using Ofis360.Application.Common;
@@ -22,7 +22,8 @@ var command = args.Length > 0 ? args[0] : "help";
 string? Arg(string name) => args.Select(a => a.StartsWith($"--{name}=") ? a[(name.Length + 3)..] : null).FirstOrDefault(v => v is not null);
 bool Flag(string name) => args.Contains($"--{name}");
 
-var connection = Environment.GetEnvironmentVariable("OFIS360_CONNECTION") ?? ConnectionStrings.LocalDev;
+// Oncelik: --connection="..." > OFIS360_CONNECTION ortam degiskeni > yerel gelistirme semasi.
+var connection = Arg("connection") ?? Environment.GetEnvironmentVariable("OFIS360_CONNECTION") ?? ConnectionStrings.LocalDev;
 var today = new SystemClock().TodayKey();
 
 switch (command)

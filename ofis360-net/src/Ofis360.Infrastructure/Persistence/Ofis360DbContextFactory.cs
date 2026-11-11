@@ -34,9 +34,9 @@ public static class OracleOptions
 
 public static class ConnectionStrings
 {
-    /// <summary>docker/oracle/compose.yml ile ayaga kalkan yerel gelistirme semasi.</summary>
+    /// <summary>Varsayilan yerel gelistirme semasi (localhost). Gercek veritabani icin ConnectionStrings:Oracle / OFIS360_CONNECTION verilir.</summary>
     public const string LocalDev = "User Id=OFIS360;Password=Ofis360Dev_2026;Data Source=localhost:1521/FREEPDB1";
 
-    /// <summary>Ayni konteynerdeki yerel test semasi (OFIS360_TEST_CONNECTION ile ezilebilir).</summary>
+    /// <summary>Yerel test semasi ornegi; testler yalnizca OFIS360_TEST_CONNECTION ile verilen semayi kullanir.</summary>
     public const string LocalTest = "User Id=OFIS360_TEST;Password=Ofis360Test_2026;Data Source=localhost:1521/FREEPDB1";
 }

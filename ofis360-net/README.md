@@ -10,7 +10,7 @@ Taşıma planı ve karar kayıtları: [docs/TASIMA-HARITASI.md](docs/TASIMA-HARI
 | API (Kestrel) | 5210 | `src/Ofis360.Api/appsettings.json` → `Ofis360:Port` |
 | Eski Angular 22 arayüzü | 4210 | `web/` — artık kullanılmıyor, kaldırılacak |
 | MVC + AngularJS (yeni arayüz) | 5220 | `src/Ofis360.Web`; API'yi `Ofis360Web:ApiBaseUrl` üzerinden HTTP ile çağırır |
-| Oracle Free | 1521 | `docker/oracle/compose.yml`, PDB `FREEPDB1` |
+| Oracle | 1521 | Mevcut bir Oracle veritabanı (19c+ / 23ai); bağlantı `ConnectionStrings:Oracle` — bkz. [db/README.md](db/README.md) |
 
 3000, 3210, 3300 ve 5555 başka uygulamalara aittir; kullanılmaz.
 
@@ -19,33 +19,32 @@ Taşıma planı ve karar kayıtları: [docs/TASIMA-HARITASI.md](docs/TASIMA-HARI
 - .NET SDK 10.0.403 — kullanıcı profiline kurulu: `%LOCALAPPDATA%\Microsoft\dotnet\dotnet.exe`
   (PATH'e eklenmedi; komutlar aşağıdaki gibi tam yolla ya da PATH'e ekleyerek çalıştırılır).
 - Node/npm gerekmez (yalnızca kaldırılacak eski `web/` için kullanılıyordu).
-- Docker Desktop (Oracle Free konteyneri ≥ 2 GB RAM ister).
+- Erişilebilir bir Oracle veritabanı ve o veritabanında uygulamaya ait bir şema (Docker gerekmez).
 
 ```powershell
 $env:PATH = "$env:LOCALAPPDATA\Microsoft\dotnet;$env:PATH"
 ```
 
-## Oracle'ı ayağa kaldırma
+## Veritabanı (mevcut bir Oracle)
+
+Adım adım kurulum, gereken bağlantı bilgileri ve sık hatalar: **[db/README.md](db/README.md)**. Kısaca:
 
 ```powershell
-docker compose -f docker/oracle/compose.yml up -d
-docker compose -f docker/oracle/compose.yml ps        # "healthy" olunca hazır (ilk açılış 2-5 dk)
+sqlplus sys@//sunucu:1521/SERVIS as sysdba @db/00-create-user.sql      # DBA: şema kullanıcısı (bir kez)
+sqlplus OFIS360/PAROLA@//sunucu:1521/SERVIS @db/01-schema.sql          # tablolar, PL/SQL paketi, tetikleyiciler
+.\db\load-test-data.ps1 -Connection "User Id=OFIS360;Password=PAROLA;Data Source=sunucu:1521/SERVIS"   # isteğe bağlı test verisi
 ```
 
-İlk açılışta `docker/oracle/init/01-user.sql` iki şema kullanıcısı oluşturur:
-
-| Kullanıcı | Parola | Amaç |
-|---|---|---|
-| `OFIS360` | `Ofis360Dev_2026` | geliştirme (API, seed) |
-| `OFIS360_TEST` | `Ofis360Test_2026` | yerel entegrasyon testleri |
-
-SYS parolası `ORACLE_PWD` (varsayılan `Ofis360Sys_2026`). Bunlar yalnızca yerel geliştirme içindir.
+Bağlantı dizesi API'de durur: `src/Ofis360.Api/appsettings.Development.json` (geliştirme) ya da `ConnectionStrings__Oracle`
+ortam değişkeni (sunucu). Varsayılan geliştirme değeri `localhost:1521/FREEPDB1` üzerindeki `OFIS360` şemasıdır; kendi veritabanınıza
+göre değiştirin.
 
 ## Şema (EF Core migrations)
 
 ```powershell
 dotnet ef database update --project src/Ofis360.Infrastructure --startup-project src/Ofis360.Infrastructure
-# Farklı şemaya uygulamak için: $env:OFIS360_CONNECTION = "User Id=...;Password=...;Data Source=localhost:1521/FREEPDB1"
+# Hedef şema: $env:OFIS360_CONNECTION = "User Id=...;Password=...;Data Source=sunucu:1521/SERVIS"
+# sqlplus ile kurmak isteyenler için aynı içerik: db/01-schema.sql (yeni migration sonrası yeniden üretin, bkz. dosya başlığı)
 ```
 
 Yeni migration: `dotnet ef migrations add <Ad> --project src/Ofis360.Infrastructure --startup-project src/Ofis360.Infrastructure --output-dir Persistence/Migrations`
@@ -97,13 +96,12 @@ dotnet run --project src/Ofis360.Web               # http://localhost:5220  → 
 
 ```powershell
 dotnet test tests/Ofis360.Domain.Tests            # 154 saf birim testi (kural motoru, tarih, kroki), veritabanı gerekmez
-$env:OFIS360_TEST_CONNECTION = "User Id=OFIS360_TEST;Password=Ofis360Test_2026;Data Source=localhost:1521/FREEPDB1"
+$env:OFIS360_TEST_CONNECTION = "User Id=OFIS360_TEST;Password=...;Data Source=sunucu:1521/SERVIS"
 dotnet test tests/Ofis360.Application.Tests       # 291 test: Oracle'a karşı entegrasyon + kroki doğrulama + şema
-cd web; npx ng test --watch=false                 # 18 Angular testi (Vitest + jsdom)
 ```
 
-`OFIS360_TEST_CONNECTION` verilmezse entegrasyon testleri Testcontainers ile geçici bir Oracle Free
-konteyneri başlatır (1-3 dk, ≥ 2 GB boş RAM gerekir).
+Entegrasyon testleri `OFIS360_TEST_CONNECTION` ile verilen **ayrı** bir test şemasına yazar (yoksa açıkça hata verir);
+şema `db/00-create-user.sql` ile oluşturulur, tablolar ilk çalıştırmada kurulur. Canlı ya da geliştirme şemasını vermeyin.
 
 | Proje | Test | İçerik | Süre |
 |---|---|---|---|
@@ -147,10 +145,10 @@ src/Ofis360.Infrastructure   Ofis360DbContext, konfigürasyonlar, migrations, PL
 src/Ofis360.Api              controllers, hata zarfı middleware, Program.cs
 src/Ofis360.Seed             demo verisi CLI
 tests/Ofis360.Domain.Tests   xUnit birim
-tests/Ofis360.Application.Tests  xUnit + Oracle (Testcontainers / yerel)
+tests/Ofis360.Application.Tests  xUnit + Oracle (ayrı test şeması, OFIS360_TEST_CONNECTION)
 src/Ofis360.Web              ASP.NET Core MVC + Razor + AngularJS 1.8.2 (yeni arayüz, API'yi HTTP ile çağırır)
 web/                         eski Angular 22 arayüzü — kullanılmıyor, kaldırılacak
-docker/oracle/               compose + init
+db/                          kullanıcı ve şema SQL betikleri, test verisi yükleme (db/README.md)
 ```
 
 ## REST API (67 uç nokta)
@@ -177,7 +175,7 @@ PL/SQL: `OFIS360_RESERVATION_PKG.BOOK_ROOM` oda satırını kilitleyerek eş zam
 - `UPDATED_AT` değeri DB trigger'ı ile değil `SaveChanges` sırasında yazılır (Prisma `@updatedAt` ile aynı).
 - EF ifade gruplaması kapalı (`MaxBatchSize(1)`): sağlayıcı bu şemada gruplu INSERT'te çöküyor. Çok koleksiyonlu
   sorgular bölünmüş (`SplitQuery`) çalışır; aksi hâlde kat planı sorgusu kartezyen patlaması yapıyor.
-- Şema sıfırlama (yalnızca yerel): `docker exec -i ofis360-oracle sqlplus -s OFIS360_TEST/Ofis360Test_2026@//localhost:1521/FREEPDB1 < docker/oracle/reset-schema.sql`
+- Test şemasını sıfırlama: `sqlplus OFIS360_TEST/...@//sunucu:1521/SERVIS @db/99-drop-schema-objects.sql` (canlı şemada çalıştırmayın).
 
 ## Hata zarfı
 
@@ -231,8 +229,6 @@ aynıdır. Bilinçli farkların tamamı aşağıdadır; bunların dışında bir
   her bağlantıda istek kullanıcısını yazar (oturumsuz/uygulama dışında boş, `DB_USER` dolu). Ekrana yansımaz; `AUDIT_LOG` kaynakla aynı.
   Saklama/temizlik politikası DBA kararıdır (temizlik için yalnızca-ekleme trigger'ı geçici devre dışı bırakılmalı).
 - Sayfa yenilenirken yarıda kalan istekler tarayıcı konsoluna "Sunucuya ulaşılamadı" yazar (fetch iptali); ekrana yansımaz.
-- Oracle konteyneri `restart: "no"`; makine yeniden başlayınca `docker compose -f docker/oracle/compose.yml up -d` gerekir.
-  Konteynerin sağlık durumu bazen "unhealthy" görünür; `GET /api/health` 200 dönüyorsa bağlantı sağlıklıdır.
 - Kimlik doğrulama demo düzeyindedir (şifresiz hesap seçimi); kurumsal SSO bu taşımanın kapsamında değildir.
 
 ## Doğrulama

@@ -20,16 +20,17 @@ Hedef ortam kurulumu için [KURULUM-VE-ISLETIM.md](KURULUM-VE-ISLETIM.md).
 
 ## 2. Yerelde çalıştırma
 
-Gereksinimler: .NET SDK 10, Node 24, Docker.
+Gereksinimler: .NET SDK 10 ve erişilebilir bir Oracle veritabanı (Docker gerekmez). Şema kurulumu ve bağlantı bilgileri: `db/README.md`.
 
 ```powershell
-docker compose -f docker/oracle/compose.yml up -d
-dotnet ef database update -p src/Ofis360.Infrastructure -s src/Ofis360.Infrastructure
+# Bağlantı: src/Ofis360.Api/appsettings.Development.json → ConnectionStrings:Oracle
+$env:OFIS360_CONNECTION = "User Id=OFIS360;Password=...;Data Source=sunucu:1521/SERVIS"
+dotnet ef database update -p src/Ofis360.Infrastructure -s src/Ofis360.Infrastructure   # ya da sqlplus ile db/01-schema.sql
 dotnet run --project src/Ofis360.Api      # http://localhost:5210/api/health
-cd web; npm install; npm start            # http://localhost:4210
+dotnet run --project src/Ofis360.Web      # http://localhost:5220
 ```
 
-Boş veritabanına demo veri yüklemek için: `dotnet run --project src/Ofis360.Seed -- seed`
+Boş şemaya test verisi yüklemek için: `.\db\load-test-data.ps1 -Connection "..."`
 
 ## 3. Neyi nereden değiştiririm
 
@@ -119,10 +120,8 @@ Bildirimler şu an yalnızca uygulama içindedir.
 ```powershell
 dotnet test tests/Ofis360.Domain.Tests
 
-$env:OFIS360_TEST_CONNECTION = "User Id=OFIS360_TEST;Password=Ofis360Test_2026;Data Source=localhost:1521/FREEPDB1"
+$env:OFIS360_TEST_CONNECTION = "User Id=OFIS360_TEST;Password=...;Data Source=sunucu:1521/SERVIS"
 dotnet test tests/Ofis360.Application.Tests
-
-cd web; npx ng test --watch=false
 ```
 
-Bağlantı verilmezse entegrasyon testleri geçici bir Oracle konteyneri açar. Ortak test verisi: `tests/Ofis360.Application.Tests/Fixtures/TestWorld.cs`.
+Entegrasyon testleri ayrı bir test şeması ister (`OFIS360_TEST_CONNECTION`); verilmezse açık bir hata verir. Ortak test verisi: `tests/Ofis360.Application.Tests/Fixtures/TestWorld.cs`.
