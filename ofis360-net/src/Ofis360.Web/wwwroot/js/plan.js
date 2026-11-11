@@ -7,6 +7,12 @@
     AVAILABLE: 'Uygun', MINE: 'Sizin masanız', RESERVED: 'Dolu', CLOSED: 'Kullanıma kapalı',
     ACCESSIBLE: 'Erişilebilirlik için ayrılmış', RESTRICTED_BY_RULE: 'Kural gereği seçilemez'
   };
+  // Eski kat plani ile ayni ozellik filtreleri (masa ozellik anahtarlari).
+  var FEATURE_FILTERS = [
+    { key: 'WINDOW', label: 'Pencere yanı' }, { key: 'DUAL_MONITOR', label: 'Çift monitör' }, { key: 'DOCK', label: 'Dock istasyonu' },
+    { key: 'QUIET', label: 'Sessiz alan' }, { key: 'STANDING', label: 'Yükseklik ayarlı' }, { key: 'ERGONOMIC', label: 'Ergonomik' },
+    { key: 'ACCESSIBLE', label: 'Erişilebilir' }
+  ];
   var STATUS_LABELS = { BOOKED: 'Rezerve', CHECKED_IN: 'Check-in yapıldı', COMPLETED: 'Tamamlandı', CANCELLED: 'İptal edildi', NO_SHOW: 'Gelinmedi' };
 
   angular.module('ofis360').controller('PlanCtrl', ['$q', 'api', 'days', 'toast', 'urlState',
@@ -17,11 +23,44 @@
       vm.floorId = urlState.get('floor');
       vm.zoom = 1;
       vm.purposes = PURPOSES;
+      vm.featureFilters = FEATURE_FILTERS;
+      vm.activeFeatures = [];
+      vm.view = 'plan';
+      vm.highlighted = null;
       vm.pick = { start: null, end: null };
       vm.roomForm = { title: '', purpose: PURPOSES[0], attendeeCount: 2 };
       var pendingRoomId = urlState.get('room');
       var mine = { upcomingDesks: [], upcomingRooms: [] };
       var roomAvailability = null;
+
+      /** Secili ozelliklerin hepsine sahip masalar vurgulanir, digerleri soluklasir (eski haritadaki davranis). */
+      vm.toggleFeature = function (key) {
+        var i = vm.activeFeatures.indexOf(key);
+        if (i >= 0) vm.activeFeatures.splice(i, 1); else vm.activeFeatures.push(key);
+        refreshFilter();
+      };
+      vm.clearFeatures = function () { vm.activeFeatures = []; refreshFilter(); };
+      vm.isFeatureActive = function (key) { return vm.activeFeatures.indexOf(key) >= 0; };
+      function refreshFilter() {
+        if (!vm.plan || !vm.activeFeatures.length) { vm.highlighted = null; vm.visibleDesks = vm.plan ? vm.plan.desks : []; groupDesks(); return; }
+        var map = {};
+        vm.visibleDesks = vm.plan.desks.filter(function (d) {
+          var ok = vm.activeFeatures.every(function (k) { return d.features.some(function (f) { return f.key === k; }); });
+          if (ok) map[d.id] = true;
+          return ok;
+        });
+        vm.highlighted = map;
+        groupDesks();
+      }
+      function groupDesks() {
+        var groups = {}, order = [];
+        (vm.visibleDesks || []).forEach(function (d) {
+          if (!groups[d.zoneName]) { groups[d.zoneName] = []; order.push(d.zoneName); }
+          groups[d.zoneName].push(d);
+        });
+        vm.deskGroups = order.map(function (z) { return { zoneName: z, desks: groups[z] }; });
+      }
+      vm.featureSummary = function (d) { return d.features.slice(0, 2).map(function (f) { return f.name; }).join(' · ') || 'Standart masa'; };
 
       vm.deskStateLabel = function (s) { return DESK_STATE_LABELS[s] || s; };
       vm.statusLabel = function (s) { return STATUS_LABELS[s] || s; };
@@ -59,6 +98,7 @@
         return $q.all([api.get('/Plan/Data', params), api.get('/Plan/Rooms', params), api.get('/Bookings/List')])
           .then(function (res) {
             vm.plan = res[0];
+            refreshFilter();
             roomAvailability = res[1];
             mine = res[2];
             refreshMine();
@@ -94,6 +134,13 @@
         vm.desk = desk;
         vm.selectedDeskId = id;
         vm.deskNote = '';
+        // Secilemeyen masa icin ayni bolgeden ve populer olmayan masalar oncelikli 3 oneri (eski davranis).
+        vm.alternatives = desk.selectable ? [] : vm.plan.desks
+          .filter(function (d) { return d.selectable && d.id !== desk.id; })
+          .map(function (d) { return { desk: d, score: (d.zoneId === desk.zoneId ? 2 : 0) + (d.popular ? 0 : 1) }; })
+          .sort(function (a, b) { return b.score - a.score; })
+          .slice(0, 3)
+          .map(function (x) { return x.desk; });
       };
 
       vm.selectRoom = function (id) {

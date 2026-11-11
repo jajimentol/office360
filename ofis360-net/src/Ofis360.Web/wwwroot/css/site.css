@@ -166,6 +166,22 @@ input:focus, select:focus, .btn:focus-visible, .ds-day:focus-visible { outline: 
 .slot-row:last-child { border-bottom: 0; }
 .slot-row strong { flex: 1; }
 
+/* Ozellik filtreleri ve liste gorunumu */
+.feature-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.feature-filters .label { margin-right: 4px; }
+.filter-chip { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 12px; font-weight: 600; color: var(--ink-700); cursor: pointer; }
+.filter-chip:hover { border-color: #bfd3ee; background: var(--brand-50); }
+.filter-chip.active { background: var(--brand-600); border-color: var(--brand-600); color: #fff; }
+.link-btn { border: 0; background: none; color: var(--ink-500); text-decoration: underline; font: inherit; font-size: 12px; cursor: pointer; }
+.tabs-sm button { padding: 4px 10px; font-size: 12px; }
+.desk-list { padding: 14px; max-height: calc(100vh - 260px); overflow-y: auto; }
+.desk-list .label { margin: 12px 0 6px; }
+.desk-grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.desk-item { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; text-align: left; border: 1px solid var(--line); border-radius: 11px; background: #fff; padding: 10px; font: inherit; cursor: pointer; }
+.desk-item:hover, .desk-item.selected { border-color: var(--brand-600); background: var(--brand-50); }
+.alternatives { margin: 12px 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.alternatives .label { width: 100%; }
+
 /* Oda zaman cizelgesi: her dilim bir hucre */
 .timeline-head { display: flex; justify-content: space-between; align-items: baseline; margin-top: 14px; gap: 8px; flex-wrap: wrap; font-size: 12px; }
 .timeline { display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; margin-top: 8px; }

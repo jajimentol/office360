@@ -126,7 +126,7 @@
   angular.module('ofis360').directive('o3FloorPlan', function () {
     return {
       restrict: 'E',
-      scope: { plan: '<', selectedDeskId: '<', selectedRoomId: '<', onDesk: '&', onRoom: '&' },
+      scope: { plan: '<', selectedDeskId: '<', selectedRoomId: '<', highlighted: '<?', onDesk: '&', onRoom: '&' },
       template:
         '<svg ng-if="plan" class="floor-svg" ng-attr-view_box="0 0 {{ plan.floor.planWidth }} {{ plan.floor.planHeight }}" role="group" aria-label="Kat planı">' +
         '<defs>' +
@@ -164,7 +164,7 @@
         '</g>' +
 
         // Masalar (masa = tek sandalye)
-        '<g ng-repeat="d in desks track by d.desk.id" class="desk" ng-class="{ selected: d.selected }" role="button" tabindex="0" aria-label="{{ d.aria }}" aria-pressed="{{ d.selected }}"' +
+        '<g ng-repeat="d in desks track by d.desk.id" class="desk" ng-class="{ selected: d.selected, dimmed: d.dimmed }" ng-attr-opacity="{{ d.dimmed ? 0.22 : undefined }}" role="button" tabindex="0" aria-label="{{ d.aria }}" aria-pressed="{{ d.selected }}"' +
         '   ng-attr-transform="{{ d.transform || undefined }}" ng-click="onDesk({ id: d.desk.id })" ng-keydown="key($event, \'desk\', d.desk.id)">' +
         '  <title>{{ d.desk.code }} · {{ d.style.label }}{{ d.desk.occupant ? \' · \' + d.desk.occupant.fullName : \'\' }}</title>' +
         '  <rect ng-attr-x="{{ d.desk.x - 9 }}" ng-attr-y="{{ d.y + d.h + 1 }}" width="18" height="6" rx="3" ng-attr-fill="{{ d.style.stroke }}" opacity="0.55"></rect>' +
@@ -182,7 +182,7 @@
             if (kind === 'desk') scope.onDesk({ id: id }); else scope.onRoom({ id: id });
           }
         };
-        scope.$watchGroup(['plan', 'selectedDeskId', 'selectedRoomId'], function () {
+        scope.$watchGroup(['plan', 'selectedDeskId', 'selectedRoomId', 'highlighted'], function () {
           var plan = scope.plan;
           if (!plan) { scope.elements = scope.zones = scope.desks = scope.rooms = []; return; }
           var hasSketch = plan.elements && plan.elements.some(function (e) { return e.visible; });
@@ -191,7 +191,11 @@
             : [];
           scope.zones = hasSketch ? [] : plan.zones.map(function (z) { return angular.extend({ st: ZONE_STYLE[z.kind] || ZONE_STYLE.WORK }, z); });
           scope.rooms = plan.rooms.map(function (r) { return renderRoom(r, scope.selectedRoomId); });
-          scope.desks = plan.desks.map(function (d) { return renderDesk(d, scope.selectedDeskId); });
+          scope.desks = plan.desks.map(function (d) {
+            var r = renderDesk(d, scope.selectedDeskId);
+            r.dimmed = !!scope.highlighted && !scope.highlighted[d.id];
+            return r;
+          });
         });
       }
     };

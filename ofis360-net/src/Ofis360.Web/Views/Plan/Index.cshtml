@@ -39,18 +39,43 @@
                 <li><span class="sw sw-restricted"></span>Kural gereği seçilemez</li>
                 <li><span class="sw sw-closed"></span>Kapalı</li>
             </ul>
-            <div class="zoom">
+            <div class="tabs tabs-sm" role="tablist" aria-label="Görünüm">
+                <button type="button" role="tab" ng-class="{ active: vm.view === 'plan' }" ng-click="vm.view = 'plan'">Plan</button>
+                <button type="button" role="tab" ng-class="{ active: vm.view === 'list' }" ng-click="vm.view = 'list'">Liste</button>
+            </div>
+            <div class="zoom" ng-show="vm.view === 'plan'">
                 <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.zoomBy(-0.2)" aria-label="Uzaklaştır">−</button>
                 <span>{{ vm.zoom * 100 | number:0 }}%</span>
                 <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.zoomBy(0.2)" aria-label="Yakınlaştır">+</button>
             </div>
         </div>
-        <div class="plan-scroll" ng-class="{ loading: vm.loading }">
+        <div class="feature-filters" role="group" aria-label="Özelliğe göre filtrele">
+            <span class="label">Özelliğe göre filtrele</span>
+            <button type="button" class="filter-chip" ng-repeat="f in vm.featureFilters" ng-class="{ active: vm.isFeatureActive(f.key) }"
+                    aria-pressed="{{ vm.isFeatureActive(f.key) }}" ng-click="vm.toggleFeature(f.key)">{{ f.label }}</button>
+            <button type="button" class="link-btn" ng-if="vm.activeFeatures.length" ng-click="vm.clearFeatures()">Filtreleri temizle</button>
+            <span class="muted small" ng-if="vm.activeFeatures.length">{{ vm.visibleDesks.length }} masa uyuyor</span>
+        </div>
+        <div class="plan-scroll" ng-class="{ loading: vm.loading }" ng-show="vm.view === 'plan'">
             <div class="plan-canvas" ng-style="{ width: (vm.zoom * 100) + '%' }">
-                <o3-floor-plan plan="vm.plan" selected-desk-id="vm.selectedDeskId" selected-room-id="vm.selectedRoomId"
+                <o3-floor-plan plan="vm.plan" selected-desk-id="vm.selectedDeskId" selected-room-id="vm.selectedRoomId" highlighted="vm.highlighted"
                                on-desk="vm.selectDesk(id)" on-room="vm.selectRoom(id)"></o3-floor-plan>
             </div>
             <div class="plan-empty" ng-if="!vm.plan && !vm.loading && !vm.error">Bu kat için plan bulunamadı.</div>
+        </div>
+        <div class="desk-list" ng-if="vm.view === 'list'">
+            <p class="muted" ng-if="!vm.visibleDesks.length">Filtreye uyan masa bulunamadı. Filtreleri gevşetmeyi deneyin.</p>
+            <div ng-repeat="g in vm.deskGroups">
+                <span class="label">{{ g.zoneName }}</span>
+                <ul class="desk-grid">
+                    <li ng-repeat="d in g.desks">
+                        <button type="button" class="desk-item" ng-class="{ selected: d.id === vm.selectedDeskId }" ng-click="vm.selectDesk(d.id)">
+                            <span><strong>{{ d.code }}</strong><br /><span class="muted small">{{ vm.featureSummary(d) }}</span></span>
+                            <span class="state-pill" ng-class="'state-' + d.state">{{ vm.deskStateLabel(d.state) }}</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
         </div>
     </section>
 
@@ -108,6 +133,11 @@
                         <strong>{{ v.title }}</strong> {{ v.message }}
                     </li>
                 </ul>
+            </div>
+
+            <div ng-if="vm.alternatives.length && vm.desk.state !== 'MINE'" class="alternatives">
+                <span class="label">Önerilen uygun masalar</span>
+                <button type="button" class="btn btn-ghost btn-sm" ng-repeat="a in vm.alternatives" ng-click="vm.selectDesk(a.id)">{{ a.code }} · {{ a.zoneName }}</button>
             </div>
 
             <div ng-if="vm.desk.selectable && (vm.desk.state === 'AVAILABLE' || vm.desk.state === 'ACCESSIBLE')" class="form">
