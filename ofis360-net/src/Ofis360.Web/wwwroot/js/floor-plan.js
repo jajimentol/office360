@@ -123,6 +123,11 @@
     };
   }
 
+  /** Plan duzenleyicisi ayni cizim kurallarini kullanir. */
+  angular.module('ofis360').constant('planShapes', {
+    renderElement: renderElement, elementDefaults: ELEMENT_DEFAULTS, shortDesk: shortDesk, roomStyle: ROOM_STYLE
+  });
+
   angular.module('ofis360').directive('o3FloorPlan', function () {
     return {
       restrict: 'E',

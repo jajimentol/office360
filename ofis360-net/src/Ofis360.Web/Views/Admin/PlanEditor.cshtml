@@ -1,0 +1,193 @@
+<div class="page-head compact">
+    <div>
+        <h1>Kat planı düzenleyici</h1>
+        <p class="muted small">Krokiyi çizin, masaları ve odaları sürükleyerek yerleştirin. Kaydedene kadar çalışanlar eski planı görür.</p>
+    </div>
+    <div class="actions">
+        <label class="field field-inline"><span>Kat</span>
+            <select ng-model="vm.floorId" ng-change="vm.changeFloor()" ng-options="f.id as f.label for f in vm.floors"></select>
+        </label>
+        <span class="chip" ng-if="vm.dirty" style="background:#fef3c7;color:#92400e">Kaydedilmemiş değişiklik</span>
+        <button class="btn btn-ghost btn-sm" ng-click="vm.undo()" ng-disabled="!vm.canUndo()" title="Geri al (Ctrl+Z)">↶ Geri</button>
+        <button class="btn btn-ghost btn-sm" ng-click="vm.redo()" ng-disabled="!vm.canRedo()" title="Yinele (Ctrl+Y)">↷ İleri</button>
+        <button class="btn btn-ghost btn-sm" ng-click="vm.discard()" ng-disabled="!vm.dirty || vm.busy">Değişiklikleri at</button>
+        <button class="btn btn-primary btn-sm" ng-click="vm.save()" ng-disabled="!vm.dirty || vm.busy">Kaydet</button>
+    </div>
+</div>
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+
+<div class="editor" ng-if="vm.snap">
+    <!-- Arac kutusu ve havuz -->
+    <aside class="card editor-side">
+        <span class="label">Araçlar</span>
+        <div class="tool-grid">
+            <button type="button" class="tool" ng-class="{ active: vm.tool === 'select' }" ng-click="vm.setTool('select')">Seç / taşı</button>
+            <button type="button" class="tool" ng-class="{ active: vm.tool === 'wall' }" ng-click="vm.setTool('wall')" title="Planda sürükleyerek duvar çizin">Duvar çiz</button>
+        </div>
+        <span class="label">Öğe ekle</span>
+        <div class="tool-grid">
+            <button type="button" class="tool" ng-repeat="t in vm.types" ng-click="vm.addElement(t.type)" title="{{ t.description }}">{{ t.label }}</button>
+        </div>
+        <label class="switch"><input type="checkbox" ng-model="vm.snapToGrid" /><span>Izgaraya hizala ({{ vm.grid }} px)</span></label>
+
+        <span class="label">Krokide olmayan masalar ({{ vm.unplacedDesks.length }})</span>
+        <ul class="pool">
+            <li ng-repeat="d in vm.unplacedDesks"><span>{{ d.code }} <span class="muted small">{{ d.zoneName }}</span></span><button class="btn btn-ghost btn-xs" ng-click="vm.placeDesk(d)">Yerleştir</button></li>
+        </ul>
+        <span class="label">Krokide olmayan odalar ({{ vm.unplacedRooms.length }})</span>
+        <ul class="pool">
+            <li ng-repeat="r in vm.unplacedRooms"><span>{{ r.name }} <span class="muted small">{{ r.code }}</span></span><button class="btn btn-ghost btn-xs" ng-click="vm.placeRoom(r)">Yerleştir</button></li>
+        </ul>
+        <div class="actions">
+            <button class="btn btn-ghost btn-xs" ng-click="vm.autoPlace()" ng-disabled="vm.busy || vm.dirty || (!vm.unplacedDesks.length && !vm.unplacedRooms.length)" title="Kaydedilmiş planda boş yerlere otomatik yerleştirir">Otomatik yerleştir</button>
+            <button class="btn btn-ghost btn-xs" ng-click="vm.quick = { kind: 'desk', code: '', zoneId: vm.snap.zones[0].id }">Yeni masa</button>
+            <button class="btn btn-ghost btn-xs" ng-click="vm.quick = { kind: 'room', code: '', name: '', capacity: 6 }">Yeni oda</button>
+        </div>
+        <span class="label">Başka kattan kopyala</span>
+        <div class="inline-form">
+            <select ng-model="vm.copyFrom" ng-options="f.id as f.label for f in vm.floors | filter:vm.notCurrent"><option value="">Kat seçin</option></select>
+            <button class="btn btn-ghost btn-xs" ng-click="vm.copyPlan()" ng-disabled="!vm.copyFrom || vm.busy">Kopyala</button>
+        </div>
+    </aside>
+
+    <!-- Tuval -->
+    <section class="card editor-canvas" ng-class="{ 'tool-wall': vm.tool === 'wall' }">
+        <div class="zoom zoom-float">
+            <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.zoomBy(-0.25)">−</button>
+            <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.zoom = 1">{{ vm.zoom * 100 | number:0 }}%</button>
+            <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.zoomBy(0.25)">+</button>
+        </div>
+        <div class="plan-scroll" o3-fit-height="480">
+            <div class="plan-canvas" ng-style="{ width: (vm.zoom * 100) + '%', height: (vm.zoom * 100) + '%' }">
+                <svg class="floor-svg editor-svg" ng-attr-view_box="0 0 {{ vm.snap.floor.planWidth }} {{ vm.snap.floor.planHeight }}" ng-mousedown="vm.canvasDown($event)">
+                    <defs>
+                        <pattern id="ed-grid" ng-attr-width="{{ vm.grid * 5 }}" ng-attr-height="{{ vm.grid * 5 }}" patternUnits="userSpaceOnUse">
+                            <path ng-attr-d="M {{ vm.grid * 5 }} 0 L 0 0 0 {{ vm.grid * 5 }}" fill="none" stroke="#e2e8f0" stroke-width="1"></path>
+                        </pattern>
+                    </defs>
+                    <rect x="0" y="0" ng-attr-width="{{ vm.snap.floor.planWidth }}" ng-attr-height="{{ vm.snap.floor.planHeight }}" fill="url(#ed-grid)" class="bg"></rect>
+
+                    <g ng-repeat="e in vm.rendered track by e.id" ng-attr-transform="{{ e.transform || undefined }}" class="ed-item" ng-class="{ selected: vm.isSel('el', e.id), locked: e.locked }"
+                       ng-mousedown="vm.itemDown($event, 'el', e.id)">
+                        <text ng-if="e.type === 'TEXT'" ng-attr-x="{{ e.x }}" ng-attr-y="{{ e.y + e.h / 2 + e.s.fontSize / 3 }}" ng-attr-font-size="{{ e.s.fontSize }}" font-weight="600" ng-attr-fill="{{ e.textFill }}">{{ e.label || 'Etiket' }}</text>
+                        <rect ng-if="e.type === 'TEXT'" ng-attr-x="{{ e.x }}" ng-attr-y="{{ e.y }}" ng-attr-width="{{ e.w }}" ng-attr-height="{{ e.h }}" fill="transparent"></rect>
+                        <rect ng-if="e.type !== 'TEXT'" ng-attr-x="{{ e.x }}" ng-attr-y="{{ e.y }}" ng-attr-width="{{ e.w }}" ng-attr-height="{{ e.h }}" ng-attr-rx="{{ e.rx }}" ng-attr-fill="{{ e.s.fill }}" ng-attr-stroke="{{ e.s.stroke }}" ng-attr-stroke-width="{{ e.s.strokeWidth }}" ng-attr-opacity="{{ e.hidden ? 0.3 : undefined }}"></rect>
+                        <line ng-repeat="l in e.lines" ng-attr-x1="{{ l.x1 }}" ng-attr-y1="{{ l.y1 }}" ng-attr-x2="{{ l.x2 }}" ng-attr-y2="{{ l.y2 }}" ng-attr-stroke="{{ e.s.stroke }}" stroke-width="1" opacity="0.7"></line>
+                        <path ng-if="e.path" ng-attr-d="{{ e.path }}" ng-attr-fill="{{ e.s.stroke }}" opacity="0.75"></path>
+                        <text ng-if="e.showLabel" ng-attr-x="{{ e.x + 10 }}" ng-attr-y="{{ e.y + 18 }}" font-size="11" font-weight="600" fill="#64748b">{{ e.label }}</text>
+                    </g>
+
+                    <g ng-repeat="r in vm.rooms track by r.id" class="ed-item" ng-class="{ selected: vm.isSel('room', r.id) }" ng-mousedown="vm.itemDown($event, 'room', r.id)">
+                        <rect ng-attr-x="{{ r.x }}" ng-attr-y="{{ r.y }}" ng-attr-width="{{ r.width }}" ng-attr-height="{{ r.height }}" rx="8" fill="#dbe4fd" stroke="#6B8BF5" stroke-width="2"></rect>
+                        <text ng-attr-x="{{ r.x + r.width / 2 }}" ng-attr-y="{{ r.y + r.height / 2 }}" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">{{ r.name }}</text>
+                        <text ng-attr-x="{{ r.x + r.width / 2 }}" ng-attr-y="{{ r.y + r.height / 2 + 15 }}" text-anchor="middle" font-size="11" fill="#3b4f8f">{{ r.code }} · {{ r.capacity }} kişi</text>
+                    </g>
+
+                    <g ng-repeat="d in vm.desks track by d.id" class="ed-item" ng-class="{ selected: vm.isSel('desk', d.id) }" ng-mousedown="vm.itemDown($event, 'desk', d.id)"
+                       ng-attr-transform="{{ d.rotation ? 'rotate(' + d.rotation + ' ' + d.x + ' ' + d.y + ')' : undefined }}">
+                        <rect ng-attr-x="{{ d.x - d.width / 2 }}" ng-attr-y="{{ d.y - d.height / 2 }}" ng-attr-width="{{ d.width }}" ng-attr-height="{{ d.height }}" rx="6"
+                              ng-attr-fill="{{ d.active ? '#ffffff' : '#e2e8f0' }}" ng-attr-stroke="{{ d.popular ? '#d97706' : '#64748b' }}" stroke-width="1.6"></rect>
+                        <text ng-attr-x="{{ d.x }}" ng-attr-y="{{ d.y + 4 }}" text-anchor="middle" font-size="10" font-weight="600" fill="#334155">{{ vm.short(d.code) }}</text>
+                    </g>
+
+                    <!-- Secim cercevesi ve boyutlandirma tutamagi -->
+                    <g ng-if="vm.selBox" class="sel-box">
+                        <rect ng-attr-x="{{ vm.selBox.x - 3 }}" ng-attr-y="{{ vm.selBox.y - 3 }}" ng-attr-width="{{ vm.selBox.w + 6 }}" ng-attr-height="{{ vm.selBox.h + 6 }}" fill="none" stroke="#F59E0B" stroke-width="2" stroke-dasharray="6 4"></rect>
+                        <rect ng-if="vm.selBox.resizable" class="handle" ng-attr-x="{{ vm.selBox.x + vm.selBox.w - 6 }}" ng-attr-y="{{ vm.selBox.y + vm.selBox.h - 6 }}" width="14" height="14" fill="#F59E0B" ng-mousedown="vm.handleDown($event)"></rect>
+                    </g>
+                    <rect ng-if="vm.wallDraft" ng-attr-x="{{ vm.wallDraft.x }}" ng-attr-y="{{ vm.wallDraft.y }}" ng-attr-width="{{ vm.wallDraft.width }}" ng-attr-height="{{ vm.wallDraft.height }}" fill="#334155" opacity="0.6"></rect>
+                </svg>
+            </div>
+        </div>
+        <p class="muted small editor-hint">Sürükleyerek taşıyın · köşedeki turuncu tutamakla boyutlandırın · ok tuşlarıyla kaydırın (Shift: 10 px) · Delete ile silin · Ctrl+D çoğalt · Ctrl+Z/Y geri/ileri.</p>
+    </section>
+
+    <!-- Ozellikler -->
+    <aside class="card editor-side">
+        <div ng-if="!vm.sel">
+            <h2>{{ vm.snap.floor.name }}</h2>
+            <p class="muted small">{{ vm.snap.floor.planWidth }} × {{ vm.snap.floor.planHeight }} px · {{ vm.elements.length }} öğe · {{ vm.desks.length }} masa · {{ vm.rooms.length }} oda</p>
+            <p class="muted">Düzenlemek için plandan bir öğe, masa ya da oda seçin.</p>
+        </div>
+
+        <div ng-if="vm.sel.kind === 'el' && vm.selEl">
+            <h2>{{ vm.typeLabel(vm.selEl.type) }}</h2>
+            <label class="field"><span>Etiket</span><input type="text" ng-model="vm.selEl.label" ng-change="vm.changed()" maxlength="80" /></label>
+            <div class="grid-2">
+                <label class="field"><span>X</span><input type="number" ng-model="vm.selEl.x" ng-change="vm.changed()" /></label>
+                <label class="field"><span>Y</span><input type="number" ng-model="vm.selEl.y" ng-change="vm.changed()" /></label>
+                <label class="field"><span>Genişlik</span><input type="number" min="8" ng-model="vm.selEl.width" ng-change="vm.changed()" /></label>
+                <label class="field"><span>Yükseklik</span><input type="number" min="8" ng-model="vm.selEl.height" ng-change="vm.changed()" /></label>
+                <label class="field"><span>Döndürme (°)</span><input type="number" step="15" ng-model="vm.selEl.rotation" ng-change="vm.changed()" /></label>
+                <label class="field"><span>Katman</span><input type="number" min="0" ng-model="vm.selEl.layerOrder" ng-change="vm.changed()" /></label>
+            </div>
+            <div class="grid-2">
+                <label class="field"><span>Dolgu</span><select ng-model="vm.selEl.style.fill" ng-change="vm.changed()" ng-options="c.value as c.label for c in vm.fills"><option value="">Varsayılan</option></select></label>
+                <label class="field"><span>Çizgi</span><select ng-model="vm.selEl.style.stroke" ng-change="vm.changed()" ng-options="c.value as c.label for c in vm.strokes"><option value="">Varsayılan</option></select></label>
+                <label class="field" ng-if="vm.selEl.type === 'TEXT'"><span>Yazı boyu</span><input type="number" min="8" max="48" ng-model="vm.selEl.style.fontSize" ng-change="vm.changed()" /></label>
+            </div>
+            <div class="actions">
+                <label class="switch"><input type="checkbox" ng-model="vm.selEl.locked" ng-change="vm.changed()" /><span>Kilitli</span></label>
+                <label class="switch"><input type="checkbox" ng-model="vm.selEl.visible" ng-change="vm.changed()" /><span>Görünür</span></label>
+            </div>
+            <div class="actions">
+                <button class="btn btn-ghost btn-xs" ng-click="vm.layer(1)">Öne getir</button>
+                <button class="btn btn-ghost btn-xs" ng-click="vm.layer(-1)">Arkaya gönder</button>
+                <button class="btn btn-ghost btn-xs" ng-click="vm.duplicate()">Çoğalt</button>
+                <button class="btn btn-danger-ghost btn-xs" ng-click="vm.remove()">Sil</button>
+            </div>
+        </div>
+
+        <div ng-if="vm.sel.kind === 'desk' && vm.selDesk">
+            <span class="label">Masa</span>
+            <h2>{{ vm.selDesk.code }}</h2>
+            <p class="muted small">{{ vm.selDesk.zoneName }} · {{ vm.selDesk.reservationCount }} rezervasyon<span ng-if="!vm.selDesk.active"> · pasif</span></p>
+            <div class="grid-2">
+                <label class="field"><span>Merkez X</span><input type="number" ng-model="vm.selDesk.x" ng-change="vm.changed()" /></label>
+                <label class="field"><span>Merkez Y</span><input type="number" ng-model="vm.selDesk.y" ng-change="vm.changed()" /></label>
+                <label class="field"><span>Genişlik</span><input type="number" min="8" ng-model="vm.selDesk.width" ng-change="vm.changed()" /></label>
+                <label class="field"><span>Yükseklik</span><input type="number" min="8" ng-model="vm.selDesk.height" ng-change="vm.changed()" /></label>
+                <label class="field"><span>Döndürme (°)</span><input type="number" step="15" ng-model="vm.selDesk.rotation" ng-change="vm.changed()" /></label>
+            </div>
+            <p class="muted small">Kodu, bölgesi ve özellikleri <a href="/Admin/Desks">Masalar</a> ekranından değiştirilir.</p>
+        </div>
+
+        <div ng-if="vm.sel.kind === 'room' && vm.selRoom">
+            <span class="label">Toplantı odası</span>
+            <h2>{{ vm.selRoom.name }}</h2>
+            <p class="muted small">{{ vm.selRoom.code }} · {{ vm.selRoom.capacity }} kişi · {{ vm.selRoom.reservationCount }} rezervasyon</p>
+            <div class="grid-2">
+                <label class="field"><span>X</span><input type="number" ng-model="vm.selRoom.x" ng-change="vm.changed()" /></label>
+                <label class="field"><span>Y</span><input type="number" ng-model="vm.selRoom.y" ng-change="vm.changed()" /></label>
+                <label class="field"><span>Genişlik</span><input type="number" min="40" ng-model="vm.selRoom.width" ng-change="vm.changed()" /></label>
+                <label class="field"><span>Yükseklik</span><input type="number" min="40" ng-model="vm.selRoom.height" ng-change="vm.changed()" /></label>
+            </div>
+            <p class="muted small">Adı, kapasitesi ve donanımı <a href="/Admin/Rooms">Odalar</a> ekranından değiştirilir.</p>
+        </div>
+    </aside>
+</div>
+
+<o3-modal open="vm.quick" title="{{ vm.quick.kind === 'desk' ? 'Yeni masa' : 'Yeni toplantı odası' }}" on-close="vm.quick = null">
+    <p class="muted small">Plan görünümünün ortasına eklenir ve hemen kaydedilir; ardından sürükleyerek yerini ayarlayın.</p>
+    <div class="alert alert-warn" ng-if="vm.dirty">Kaydedilmemiş değişiklikleriniz var. Önce planı kaydedin.</div>
+    <form ng-submit="vm.createQuick()" novalidate>
+        <div class="grid-2" ng-if="vm.quick.kind === 'desk'">
+            <label class="field"><span>Masa kodu</span><input type="text" ng-model="vm.quick.code" required /></label>
+            <label class="field"><span>Bölge</span><select ng-model="vm.quick.zoneId" ng-options="z.id as z.name for z in vm.snap.zones"></select></label>
+        </div>
+        <div class="grid-3" ng-if="vm.quick.kind === 'room'">
+            <label class="field"><span>Kod</span><input type="text" ng-model="vm.quick.code" required /></label>
+            <label class="field"><span>Ad</span><input type="text" ng-model="vm.quick.name" required /></label>
+            <label class="field"><span>Kapasite</span><input type="number" min="1" ng-model="vm.quick.capacity" /></label>
+        </div>
+        <div class="alert alert-error" ng-if="vm.quickError">{{ vm.quickError }}</div>
+        <div class="actions end">
+            <button type="button" class="btn btn-ghost" ng-click="vm.quick = null">Vazgeç</button>
+            <button type="submit" class="btn btn-primary" ng-disabled="vm.busy || vm.dirty">Oluştur</button>
+        </div>
+    </form>
+</o3-modal>
+
+@section Scripts {
+    <script src="~/js/admin/plan-editor.js" asp-append-version="true"></script>
+}
