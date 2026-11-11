@@ -89,7 +89,7 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.MapControllerRoute("default", "{controller=Plan}/{action=Index}/{id?}");
+app.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
 

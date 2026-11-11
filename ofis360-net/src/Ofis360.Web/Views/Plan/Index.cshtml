@@ -3,16 +3,21 @@
     ViewData["Page"] = "page-plan";
     ViewData["NgController"] = "PlanCtrl as vm";
 }
-<div class="page-head">
+<div class="page-head compact">
     <div>
         <h1>Kat planı</h1>
-        <p class="muted">Gün seçin, planda masanızı ya da toplantı odanızı işaretleyin.</p>
     </div>
     <label class="field field-inline" ng-if="vm.floors.length">
         <span>Kat</span>
         <select ng-model="vm.floorId" ng-change="vm.changeFloor()"
                 ng-options="f.id as (f.buildingName + ' · ' + f.name) group by f.buildingName for f in vm.floors"></select>
     </label>
+</div>
+
+<div class="card on-behalf" ng-if="vm.canActForOthers">
+    <span class="label">Kimin adına</span>
+    <o3-person-picker person="vm.target" on-change="vm.targetChanged()"></o3-person-picker>
+    <span class="muted small">Boş bırakırsanız kendi adınıza rezervasyon yapılır. Seçilen kişinin masası planda "sizin masanız" rengiyle görünür.</span>
 </div>
 
 <div class="card date-card">
@@ -43,11 +48,7 @@
                 <button type="button" role="tab" ng-class="{ active: vm.view === 'plan' }" ng-click="vm.view = 'plan'">Plan</button>
                 <button type="button" role="tab" ng-class="{ active: vm.view === 'list' }" ng-click="vm.view = 'list'">Liste</button>
             </div>
-            <div class="zoom" ng-show="vm.view === 'plan'">
-                <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.zoomBy(-0.2)" aria-label="Uzaklaştır">−</button>
-                <span>{{ vm.zoom * 100 | number:0 }}%</span>
-                <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.zoomBy(0.2)" aria-label="Yakınlaştır">+</button>
-            </div>
+
         </div>
         <div class="feature-filters" role="group" aria-label="Özelliğe göre filtrele">
             <span class="label">Özelliğe göre filtrele</span>
@@ -56,12 +57,19 @@
             <button type="button" class="link-btn" ng-if="vm.activeFeatures.length" ng-click="vm.clearFeatures()">Filtreleri temizle</button>
             <span class="muted small" ng-if="vm.activeFeatures.length">{{ vm.visibleDesks.length }} masa uyuyor</span>
         </div>
-        <div class="plan-scroll" ng-class="{ loading: vm.loading }" ng-show="vm.view === 'plan'">
-            <div class="plan-canvas" ng-style="{ width: (vm.zoom * 100) + '%' }">
+        <div class="plan-wrap" ng-show="vm.view === 'plan'">
+        <div class="zoom zoom-float">
+            <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.zoomBy(-0.25)" aria-label="Uzaklaştır">−</button>
+            <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.zoom = 1" title="Sığdır">{{ vm.zoom * 100 | number:0 }}%</button>
+            <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.zoomBy(0.25)" aria-label="Yakınlaştır">+</button>
+        </div>
+        <div class="plan-scroll" o3-fit-height="440" ng-class="{ loading: vm.loading }">
+            <div class="plan-canvas" ng-style="{ width: (vm.zoom * 100) + '%', height: (vm.zoom * 100) + '%' }">
                 <o3-floor-plan plan="vm.plan" selected-desk-id="vm.selectedDeskId" selected-room-id="vm.selectedRoomId" highlighted="vm.highlighted"
                                on-desk="vm.selectDesk(id)" on-room="vm.selectRoom(id)"></o3-floor-plan>
             </div>
             <div class="plan-empty" ng-if="!vm.plan && !vm.loading && !vm.error">Bu kat için plan bulunamadı.</div>
+        </div>
         </div>
         <div class="desk-list" ng-if="vm.view === 'list'">
             <p class="muted" ng-if="!vm.visibleDesks.length">Filtreye uyan masa bulunamadı. Filtreleri gevşetmeyi deneyin.</p>

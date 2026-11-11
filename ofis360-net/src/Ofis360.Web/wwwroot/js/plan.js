@@ -15,14 +15,17 @@
   ];
   var STATUS_LABELS = { BOOKED: 'Rezerve', CHECKED_IN: 'Check-in yapıldı', COMPLETED: 'Tamamlandı', CANCELLED: 'İptal edildi', NO_SHOW: 'Gelinmedi' };
 
-  angular.module('ofis360').controller('PlanCtrl', ['$q', 'api', 'days', 'toast', 'urlState',
-    function ($q, api, days, toast, urlState) {
+  angular.module('ofis360').controller('PlanCtrl', ['$q', 'api', 'days', 'toast', 'urlState', 'currentUser',
+    function ($q, api, days, toast, urlState, currentUser) {
       var vm = this;
       vm.today = days.today();
       vm.date = days.isKey(urlState.get('date')) ? urlState.get('date') : vm.today;
       vm.floorId = urlState.get('floor');
       vm.zoom = 1;
       vm.purposes = PURPOSES;
+      vm.canActForOthers = currentUser.canActForOthers;
+      vm.target = null;
+      vm.targetChanged = function () { load(); };
       vm.featureFilters = FEATURE_FILTERS;
       vm.activeFeatures = [];
       vm.view = 'plan';
@@ -95,7 +98,7 @@
         vm.error = null;
         urlState.set({ date: vm.date, floor: vm.floorId });
         var params = { floorId: vm.floorId, date: vm.date };
-        return $q.all([api.get('/Plan/Data', params), api.get('/Plan/Rooms', params), api.get('/Bookings/List')])
+        return $q.all([api.get('/Plan/Data', angular.extend({ asUser: vm.target ? vm.target.id : null }, params)), api.get('/Plan/Rooms', params), api.get('/Bookings/List')])
           .then(function (res) {
             vm.plan = res[0];
             refreshFilter();
@@ -112,6 +115,8 @@
       }
 
       function refreshMine() {
+        // Baskasi adina islem yaparken kendi kayitlarimiz gosterilmez; durum planda (Sizin masaniz = hedef kisinin masasi) gorunur.
+        if (vm.target) { vm.myDesk = null; vm.myRoomsToday = []; return; }
         vm.myDesk = (mine.upcomingDesks || []).filter(function (r) {
           return r.date === vm.date && (r.status === 'BOOKED' || r.status === 'CHECKED_IN');
         })[0] || null;
@@ -191,8 +196,8 @@
 
       vm.reserveDesk = function () {
         vm.busy = true;
-        api.post('/Plan/ReserveDesk', { deskId: vm.desk.id, date: vm.date, note: vm.deskNote || null })
-          .then(function (res) { toast.ok(res.deskCode + ' masası ' + days.long(vm.date) + ' için ayrıldı.'); return load(); })
+        api.post('/Plan/ReserveDesk', { deskId: vm.desk.id, date: vm.date, note: vm.deskNote || null, targetUserId: vm.target ? vm.target.id : null })
+          .then(function (res) { toast.ok(res.deskCode + ' masası ' + days.long(vm.date) + ' için ' + (vm.target ? vm.target.fullName + ' adına ' : '') + 'ayrıldı.'); return load(); })
           .catch(function (err) { toast.error(err.message); })
           .finally(function () { vm.busy = false; });
       };
@@ -219,7 +224,8 @@
         vm.busy = true;
         api.post('/Plan/ReserveRoom', {
           roomId: vm.room.id, date: vm.date, startMinutes: vm.pick.start, endMinutes: vm.pick.end,
-          title: vm.roomForm.title.trim(), purpose: vm.roomForm.purpose, attendeeCount: vm.roomForm.attendeeCount || 1
+          title: vm.roomForm.title.trim(), purpose: vm.roomForm.purpose, attendeeCount: vm.roomForm.attendeeCount || 1,
+          targetUserId: vm.target ? vm.target.id : null
         })
           .then(function (res) {
             toast.ok(res.roomName + ' ayrıldı.');

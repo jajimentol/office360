@@ -74,26 +74,5 @@
     };
   });
 
-  /** Kalici olmayan pencere (modal). Kullanim: <o3-modal open="vm.form" title="..." on-close="vm.form = null">...</o3-modal> */
-  app.directive('o3Modal', function () {
-    return {
-      restrict: 'E',
-      transclude: true,
-      scope: { open: '<', title: '@', onClose: '&', wide: '<?' },
-      template:
-        '<div class="modal-backdrop" ng-if="open" ng-click="onClose()">' +
-        '  <div class="modal" ng-class="{ wide: wide }" role="dialog" aria-modal="true" aria-label="{{ title }}" ng-click="$event.stopPropagation()">' +
-        '    <div class="modal-head"><h2>{{ title }}</h2><button type="button" class="btn btn-ghost btn-sm" ng-click="onClose()" aria-label="Kapat">✕</button></div>' +
-        '    <div class="modal-body" ng-transclude></div>' +
-        '  </div>' +
-        '</div>'
-    };
-  });
 
-  app.filter('dateTime', ['$filter', function ($filter) {
-    return function (v) { return v ? $filter('date')(v, 'dd.MM.yyyy HH:mm') : ''; };
-  }]);
-  app.filter('percent', function () {
-    return function (v, digits) { return v === null || v === undefined || isNaN(v) ? '–' : (+v).toFixed(digits === undefined ? 0 : digits) + '%'; };
-  });
 })();

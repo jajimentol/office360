@@ -14,21 +14,6 @@
 
   var app = angular.module('ofis360');
 
-  /** <canvas o3-chart="config"> : config degistiginde grafik yeniden cizilir. */
-  app.directive('o3Chart', function () {
-    return {
-      restrict: 'A',
-      link: function (scope, el, attrs) {
-        var chart = null;
-        scope.$watch(attrs.o3Chart, function (config) {
-          if (chart) { chart.destroy(); chart = null; }
-          if (config && window.Chart) chart = new window.Chart(el[0], angular.copy(config));
-        });
-        scope.$on('$destroy', function () { if (chart) chart.destroy(); });
-      }
-    };
-  });
-
   function bar(labels, datasets, opts) {
     opts = opts || {};
     return {

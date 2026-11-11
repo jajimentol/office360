@@ -134,10 +134,11 @@ input:focus, select:focus, .btn:focus-visible, .ds-day:focus-visible { outline: 
 .sw-restricted { background: repeating-linear-gradient(45deg, #fbbf24 0 2px, #fef3c7 2px 6px); border-color: #d97706; }
 .sw-closed { background: repeating-linear-gradient(135deg, #94a3b8 0 2px, #e2e8f0 2px 6px); }
 .zoom { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-500); }
-.plan-scroll { overflow: auto; max-height: calc(100vh - 260px); min-height: 360px; background: #f8fafc; position: relative; }
+.plan-scroll { overflow: auto; min-height: 360px; background: #f8fafc; position: relative; }
 .plan-scroll.loading { opacity: .55; transition: opacity .15s; }
-.plan-canvas { min-width: 100%; padding: 12px; }
+.plan-canvas { min-width: 100%; min-height: 100%; padding: 10px; }
 .floor-svg { display: block; width: 100%; height: auto; user-select: none; }
+.plan-canvas .floor-svg { height: 100%; }
 .floor-svg .desk, .floor-svg .room { cursor: pointer; outline: none; }
 .floor-svg .desk:hover rect:nth-of-type(2), .floor-svg .desk:focus rect:nth-of-type(2) { filter: brightness(.94); }
 .floor-svg .room:hover > rect, .floor-svg .room:focus > rect { filter: brightness(.96); stroke-width: 3; }
@@ -334,3 +335,68 @@ textarea { font: inherit; border: 1px solid var(--line); border-radius: 9px; pad
 .heat-legend { display: flex; align-items: center; gap: 3px; font-size: 12px; color: var(--ink-500); margin-bottom: 8px; }
 .heat-legend i { width: 22px; height: 12px; border-radius: 3px; display: inline-block; border: 1px solid #cbd5e1; }
 .heat-legend span { margin: 0 4px; }
+.on-behalf { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.person-picker { position: relative; min-width: 280px; }
+.person-picker input { width: 100%; }
+.person-picker .picked { display: flex; align-items: center; gap: 8px; }
+.picker-list { position: absolute; z-index: 30; left: 0; right: 0; top: 100%; list-style: none; margin: 4px 0 0; padding: 4px; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); }
+.picker-list button { width: 100%; text-align: left; border: 0; background: none; padding: 6px 8px; border-radius: 7px; font: inherit; cursor: pointer; }
+.picker-list button:hover { background: var(--brand-50); }
+.bell { position: relative; color: #fff; font-size: 17px; text-decoration: none; padding: 4px; }
+.bell:hover { text-decoration: none; }
+.bell .badge { position: absolute; top: -4px; right: -8px; background: var(--booked); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 1px 5px; }
+a.user-text { color: #fff; }
+a.user-text:hover { text-decoration: none; opacity: .9; }
+
+/* Toplanti odasi takvimi */
+.room-filters { margin-top: 12px; }
+.room-cal { overflow-x: auto; }
+.cal-row { display: flex; align-items: stretch; min-width: 760px; border-top: 1px solid var(--line); }
+.cal-head { border-top: 0; height: 22px; }
+.cal-name { width: 200px; flex-shrink: 0; padding: 8px 10px 8px 0; display: flex; flex-direction: column; gap: 1px; font-size: 13px; }
+.cal-track { position: relative; flex: 1; min-height: 46px; background: #f7fbf8; cursor: pointer; }
+.cal-head .cal-track { background: none; cursor: default; }
+.cal-head .cal-track span { position: absolute; top: 2px; font-size: 11px; color: var(--ink-400); transform: translateX(2px); }
+.cal-track.closed { background: repeating-linear-gradient(135deg, #f1f5f9 0 4px, #fff 4px 9px); cursor: not-allowed; }
+.cal-hour { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--line); }
+.cal-past { position: absolute; left: 0; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, rgba(148,163,184,.25) 0 3px, transparent 3px 8px); pointer-events: none; }
+.cal-want { position: absolute; top: 0; bottom: 0; background: rgba(252, 211, 77, .35); border-left: 2px solid #f59e0b; border-right: 2px solid #f59e0b; pointer-events: none; }
+.cal-busy { position: absolute; top: 6px; bottom: 6px; background: var(--booked); color: #fff; border-radius: 6px; font-size: 11px; font-weight: 600; padding: 3px 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; cursor: default; }
+.cal-busy.mine { background: var(--mine); }
+.legend.small span { display: inline-flex; align-items: center; gap: 5px; margin-right: 12px; }
+.room-cards { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.room-card { border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.slot-chip { border: 1px solid #a7f3d0; background: #ecfdf5; color: #065f46; border-radius: 8px; padding: 3px 8px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.slot-chip:hover { background: #d1fae5; }
+.slot-box { background: #f8fafc; border-radius: 10px; padding: 8px 10px; margin: 6px 0 10px; }
+.suggest { border: 1px solid #bfd3ee; background: var(--brand-50); border-radius: 12px; padding: 10px 12px; margin: 8px 0; }
+section.loading { opacity: .6; }
+.alert-info { background: var(--brand-50); color: var(--brand); }
+.meter { margin: 12px 0; display: flex; flex-direction: column; gap: 5px; }
+.meter-head { display: flex; justify-content: space-between; font-size: 13px; }
+.bar > span.warn { background: #f59e0b; }
+.notif-list { list-style: none; padding: 0; margin: 0; }
+.notif-list li { display: flex; justify-content: space-between; gap: 12px; padding: 12px; border-left: 3px solid var(--line); border-bottom: 1px solid var(--line); }
+.notif-list li.unread { background: #f8fbff; border-left-color: var(--brand-600); }
+.notif-list li.sev-WARNING { border-left-color: #f59e0b; }
+.notif-list li.sev-ERROR, .notif-list li.sev-DANGER { border-left-color: var(--error); }
+.notif-list p { margin: 3px 0; }
+.page-home .page-head h1 { font-size: 24px; }
+.plan-canvas o3-floor-plan { display: block; height: 100%; }
+
+/* Kat plani sayfasi: dikey alan planda kalsin diye ust bolumler sikistirildi */
+.page-head.compact { margin-bottom: 8px; align-items: center; }
+.page-plan .date-card { padding: 10px 12px; }
+.page-plan .ds-day { padding: 4px 3px; flex-basis: 52px; }
+.page-plan .ds-num { font-size: 15px; }
+.page-plan .ds-arrow { height: 46px; }
+.page-plan .ds-cal input { height: 36px; }
+.page-plan .date-caption { margin-top: 6px; font-size: 12.5px; }
+.page-plan .plan-layout { margin-top: 10px; }
+.page-plan .plan-toolbar { padding: 6px 12px; }
+.page-plan .legend { font-size: 11.5px; gap: 4px 12px; }
+.page-plan .feature-filters { padding: 6px 12px; }
+.page-plan .filter-chip { padding: 3px 10px; }
+.plan-wrap { position: relative; }
+.zoom-float { position: absolute; right: 12px; top: 10px; z-index: 5; background: rgba(255,255,255,.92); border: 1px solid var(--line); border-radius: 10px; padding: 3px; box-shadow: var(--shadow); }
+.zoom-float .btn { border: 0; min-width: 32px; }

@@ -109,5 +109,5 @@ public sealed class AccountController(ApiClient api) : WebControllerBase(api)
     public IActionResult Error() => View();
 
     private string SafeReturnUrl(string? returnUrl) =>
-        !string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && !returnUrl.StartsWith("/Account", StringComparison.OrdinalIgnoreCase) ? returnUrl : "/Plan";
+        !string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && !returnUrl.StartsWith("/Account", StringComparison.OrdinalIgnoreCase) ? returnUrl : "/Home";
 }

@@ -1,0 +1,130 @@
+<div class="page-head">
+    <div>
+        <h1>Toplantı odası rezervasyonu</h1>
+        <p class="muted" ng-if="vm.work">Tarih ve saat aralığı seçin, uygun odaları takvim veya liste görünümünde inceleyin. Mesai saatleri: {{ vm.work.start | hm }}–{{ vm.work.end | hm }}, {{ vm.work.step }} dk dilimler.</p>
+    </div>
+</div>
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+
+<section class="card">
+    <o3-date-strip selected="vm.date" min="vm.today" max="vm.maxDay" blocked="vm.blockedDays" on-change="vm.changeDate(day)"></o3-date-strip>
+    <div class="filter-bar room-filters">
+        <label class="field"><span>Başlangıç saati</span><select ng-model="vm.f.start" ng-options="t.m as t.label for t in vm.times"><option value="">Tümü</option></select></label>
+        <label class="field"><span>Bitiş saati</span><select ng-model="vm.f.end" ng-options="t.m as t.label for t in vm.times"><option value="">Tümü</option></select></label>
+        <label class="field"><span>En az kapasite</span><input type="number" min="1" max="100" ng-model="vm.f.capacity" placeholder="Örn. 6" style="width:110px" /></label>
+        <label class="field" ng-if="vm.roomFloors.length > 1"><span>Kat</span>
+            <select ng-model="vm.f.floorId" ng-options="f.id as f.label for f in vm.roomFloors"><option value="">Tüm katlar</option></select>
+        </label>
+        <button class="btn btn-primary btn-sm" ng-click="vm.apply()">Uygula</button>
+        <button class="btn btn-ghost btn-sm" ng-click="vm.reset()" title="Filtreleri sıfırla">Sıfırla</button>
+    </div>
+    <div class="chip-filters">
+        <span class="label">Donanım</span>
+        <button type="button" class="filter-chip" ng-repeat="f in vm.features" ng-class="{ active: vm.f.features.indexOf(f.key) >= 0 }" ng-click="vm.toggleFeature(f.key)">{{ f.name }}</button>
+    </div>
+</section>
+
+<section class="card" ng-if="vm.av" ng-class="{ loading: vm.loading }">
+    <div class="section-head">
+        <div>
+            <h2>Toplantı odaları · {{ vm.date | dayLong }}</h2>
+            <p class="muted small" ng-if="vm.timeFilter">{{ vm.rooms.length }} oda {{ vm.timeFilter.start | hm }}–{{ vm.timeFilter.end | hm }} arasında uygun</p>
+            <p class="muted small" ng-if="!vm.timeFilter">{{ vm.openCount() }} oda kullanıma açık</p>
+        </div>
+        <div class="tabs tabs-sm">
+            <button type="button" ng-class="{ active: vm.view === 'calendar' }" ng-click="vm.view = 'calendar'">Takvim</button>
+            <button type="button" ng-class="{ active: vm.view === 'list' }" ng-click="vm.view = 'list'">Liste</button>
+        </div>
+    </div>
+    <p class="muted empty" ng-if="!vm.rooms.length">Filtrelere uyan toplantı odası bulunamadı.</p>
+
+    <!-- Takvim gorunumu: her satir bir oda, yatay eksen mesai saatleri -->
+    <div class="room-cal" ng-if="vm.view === 'calendar' && vm.rooms.length" role="region" aria-label="Toplantı odası takvimi">
+        <div class="cal-row cal-head">
+            <div class="cal-name"></div>
+            <div class="cal-track"><span ng-repeat="h in vm.hourMarks" ng-style="{ left: vm.pos(h) + '%' }">{{ h | hm }}</span></div>
+        </div>
+        <div class="cal-row" ng-repeat="r in vm.rooms">
+            <div class="cal-name">
+                <strong>{{ r.name }}</strong>
+                <span class="muted small">{{ r.capacity }} kişi · {{ r.floorName }}</span>
+                <span class="error-text" ng-if="r.closed">Kapalı</span>
+                <span class="error-text" ng-if="!r.closed && r.accessReason">{{ r.accessReason }}</span>
+            </div>
+            <div class="cal-track" ng-class="{ closed: r.closed || r.accessReason }" ng-click="vm.trackClick($event, r)" title="Boş alana tıklayarak rezervasyon oluşturun">
+                <span class="cal-hour" ng-repeat="h in vm.hourMarks" ng-style="{ left: vm.pos(h) + '%' }"></span>
+                <span class="cal-past" ng-if="vm.nowPos() > 0" ng-style="{ width: vm.nowPos() + '%' }"></span>
+                <span class="cal-want" ng-if="vm.timeFilter" ng-style="{ left: vm.pos(vm.timeFilter.start) + '%', width: (vm.pos(vm.timeFilter.end) - vm.pos(vm.timeFilter.start)) + '%' }"></span>
+                <span class="cal-busy" ng-repeat="b in r.busySlots" ng-class="{ mine: vm.isMine(b) }" ng-style="{ left: vm.pos(b.startMinutes) + '%', width: (vm.pos(b.endMinutes) - vm.pos(b.startMinutes)) + '%' }"
+                      title="{{ b.startMinutes | hm }}–{{ b.endMinutes | hm }} · {{ b.title }}" ng-click="$event.stopPropagation()">{{ b.title }}</span>
+            </div>
+        </div>
+        <div class="legend small" style="margin-top:8px">
+            <span><i class="sw sw-booked"></i> Dolu</span> <span><i class="sw sw-mine"></i> Sizin toplantınız</span> <span><i class="sw sw-closed"></i> Geçmiş saat</span>
+        </div>
+    </div>
+
+    <!-- Liste gorunumu -->
+    <ul class="room-cards" ng-if="vm.view === 'list'">
+        <li ng-repeat="r in vm.rooms" class="room-card">
+            <div class="section-head">
+                <div><strong>{{ r.name }}</strong> <span class="muted small">{{ r.code }}</span><br /><span class="muted small">{{ r.floorName }} · {{ r.capacity }} kişi<span ng-if="r.minAttendees > 1"> · en az {{ r.minAttendees }} kişi</span></span></div>
+                <span class="chip">{{ r.usageRate | percent }} dolu</span>
+            </div>
+            <ul class="tags"><li ng-repeat="f in r.features">{{ f.name }}</li></ul>
+            <p class="error-text" ng-if="r.closed">{{ r.closureNote || 'Kullanıma kapalı' }}</p>
+            <p class="error-text" ng-if="!r.closed && r.accessReason">{{ r.accessReason }}</p>
+            <div ng-if="!r.closed && !r.accessReason">
+                <span class="label">Uygun aralıklar</span>
+                <div class="chip-filters">
+                    <span class="muted small" ng-if="!r.freeSlots.length">Uygun aralık yok.</span>
+                    <button type="button" class="slot-chip" ng-repeat="s in r.freeSlots" ng-click="vm.openBooking(r, s.startMinutes, vm.min(s.startMinutes + 60, s.endMinutes))">{{ s.startMinutes | hm }}–{{ s.endMinutes | hm }}</button>
+                </div>
+            </div>
+            <button class="btn btn-ghost btn-sm btn-block" ng-disabled="r.closed || r.accessReason || !r.freeSlots.length" ng-click="vm.openBooking(r)">Rezervasyon oluştur</button>
+        </li>
+    </ul>
+</section>
+
+<o3-modal open="vm.room" title="{{ vm.room.name }} rezervasyonu" on-close="vm.room = null">
+    <p class="muted small">{{ vm.room.code }} · {{ vm.room.capacity }} kişi · {{ vm.room.floorName }} · {{ vm.date | dayLong }}</p>
+    <form ng-submit="vm.submit()" novalidate>
+        <div class="field" ng-if="vm.canActForOthers">
+            <span>Kimin adına</span>
+            <o3-person-picker person="vm.form.target"></o3-person-picker>
+            <span class="muted small">Boş bırakırsanız kendi adınıza oluşturulur.</span>
+        </div>
+        <label class="field"><span>Toplantı başlığı</span><input type="text" ng-model="vm.form.title" maxlength="120" placeholder="Örneğin: Sprint planlama" /></label>
+        <div class="grid-2">
+            <label class="field"><span>Başlangıç</span><select ng-model="vm.form.start" ng-options="t.m as t.label for t in vm.times"></select></label>
+            <label class="field"><span>Bitiş</span><select ng-model="vm.form.end" ng-options="t.m as t.label for t in vm.endTimes"></select></label>
+            <label class="field"><span>Katılımcı sayısı</span><input type="number" min="{{ vm.room.minAttendees }}" max="{{ vm.room.capacity }}" ng-model="vm.form.attendees" />
+                <span class="muted small">{{ vm.room.minAttendees > 1 ? 'En az ' + vm.room.minAttendees + ', en çok ' : 'Oda kapasitesi: ' }}{{ vm.room.capacity }} kişi</span></label>
+            <label class="field"><span>Rezervasyon amacı</span><select ng-model="vm.form.purpose" ng-options="p for p in vm.purposes"></select></label>
+        </div>
+        <div class="slot-box">
+            <span class="label">Bu gün için uygun aralıklar</span>
+            <div class="chip-filters">
+                <span class="muted small" ng-if="!vm.room.freeSlots.length">Uygun aralık bulunmuyor.</span>
+                <button type="button" class="slot-chip" ng-repeat="s in vm.room.freeSlots" ng-click="vm.pickSlot(s.startMinutes, vm.min(s.startMinutes + 60, s.endMinutes))">{{ s.startMinutes | hm }}–{{ s.endMinutes | hm }}</button>
+            </div>
+        </div>
+        <div class="alert alert-warn" ng-repeat="v in vm.violations"><strong>{{ v.title }}</strong> {{ v.message }}<br ng-if="v.hint" /><span class="small" ng-if="v.hint">{{ v.hint }}</span></div>
+        <div class="alert alert-error" ng-if="vm.formError && !vm.violations.length">{{ vm.formError }}</div>
+        <div class="suggest" ng-if="vm.suggestions.alternativeSlots.length || vm.suggestions.alternativeRooms.length">
+            <strong>Alternatif öneriler</strong>
+            <div ng-if="vm.suggestions.alternativeSlots.length"><span class="muted small">Aynı odada uygun saatler</span>
+                <div class="chip-filters"><button type="button" class="slot-chip" ng-repeat="s in vm.suggestions.alternativeSlots" ng-click="vm.pickSlot(s.startMinutes, s.endMinutes)">{{ s.startMinutes | hm }}–{{ s.endMinutes | hm }}</button></div></div>
+            <div ng-if="vm.suggestions.alternativeRooms.length"><span class="muted small">Aynı saatte uygun odalar</span>
+                <div class="chip-filters"><button type="button" class="slot-chip" ng-repeat="a in vm.suggestions.alternativeRooms" ng-click="vm.switchRoom(a.id)">{{ a.name }} ({{ a.capacity }} kişi)</button></div></div>
+        </div>
+        <div class="actions end">
+            <button type="button" class="btn btn-ghost" ng-click="vm.room = null">Vazgeç</button>
+            <button type="submit" class="btn btn-primary" ng-disabled="vm.busy">Rezervasyonu oluştur</button>
+        </div>
+    </form>
+</o3-modal>
+
+@section Scripts {
+    <script src="~/js/rooms.js" asp-append-version="true"></script>
+}

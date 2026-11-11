@@ -8,6 +8,9 @@
 
   var app = angular.module('ofis360', []);
 
+  /** Oturumdaki kullanicinin rolu ve "kimin adina" yetkisi (layout'ta yazilir). */
+  app.constant('currentUser', window.o3User || { role: null, isSecretary: false, canActForOthers: false });
+
   app.config(['$httpProvider', '$compileProvider', function ($httpProvider, $compileProvider) {
     // MVC, oturum dustugunde AJAX isteklerine yonlendirme yerine 401 doner.
     $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
@@ -36,7 +39,8 @@
       var message = (body && body.error && body.error.message) ||
         (response && response.status === 403 ? 'Bu işlem için yetkiniz yok.' :
           response && response.status === 503 ? 'Sunucuya şu anda ulaşılamıyor.' : 'İşlem tamamlanamadı. Lütfen yeniden deneyin.');
-      return $q.reject({ status: response && response.status, message: message, code: body && body.error && body.error.code, details: body && body.error && body.error.details });
+      var err = body && body.error;
+      return $q.reject({ status: response && response.status, message: message, code: err && err.code, details: err && err.details, violations: err && err.violations });
     }
     return {
       get: function (url, params) { return $http.get(url, { params: params }).then(unwrap, fail); },
@@ -68,6 +72,22 @@
       link: function (scope) { scope.toasts = toast.items; }
     };
   }]);
+
+  /** Kalici olmayan pencere (modal). Kullanim: <o3-modal open="vm.form" title="..." on-close="vm.form = null">...</o3-modal> */
+  app.directive('o3Modal', function () {
+    return {
+      restrict: 'E',
+      transclude: true,
+      scope: { open: '<', title: '@', onClose: '&', wide: '<?' },
+      template:
+        '<div class="modal-backdrop" ng-if="open" ng-click="onClose()">' +
+        '  <div class="modal" ng-class="{ wide: wide }" role="dialog" aria-modal="true" aria-label="{{ title }}" ng-click="$event.stopPropagation()">' +
+        '    <div class="modal-head"><h2>{{ title }}</h2><button type="button" class="btn btn-ghost btn-sm" ng-click="onClose()" aria-label="Kapat">✕</button></div>' +
+        '    <div class="modal-body" ng-transclude></div>' +
+        '  </div>' +
+        '</div>'
+    };
+  });
 
   /** Gun anahtari (YYYY-MM-DD) yardimcilari. Ofis Turkiye saatinde; tarayici yerel tarihi kullanilir. */
   app.factory('days', function () {
@@ -102,6 +122,12 @@
       var h = Math.floor(m / 60), mm = m % 60;
       return (h < 10 ? '0' + h : h) + ':' + (mm < 10 ? '0' + mm : mm);
     };
+  });
+  app.filter('dateTime', ['$filter', function ($filter) {
+    return function (v) { return v ? $filter('date')(v, 'dd.MM.yyyy HH:mm') : ''; };
+  }]);
+  app.filter('percent', function () {
+    return function (v, digits) { return v === null || v === undefined || isNaN(v) ? '–' : (+v).toFixed(digits === undefined ? 0 : digits) + '%'; };
   });
   app.filter('initials', function () {
     return function (name) {
@@ -195,6 +221,84 @@
           scope.calendar = days.isKey(scope.selected) ? days.parse(scope.selected) : null;
           build();
         });
+      }
+    };
+  }]);
+
+  /** Ust menudeki okunmamis bildirim sayaci. */
+  angular.module('ofis360').directive('o3Unread', ['api', '$interval', function (api, $interval) {
+    return {
+      restrict: 'A',
+      link: function (scope) {
+        function load() { api.get('/Me/UnreadCount').then(function (r) { scope.unread = r.unread; }).catch(angular.noop); }
+        load();
+        var t = $interval(load, 120000);
+        scope.$on('$destroy', function () { $interval.cancel(t); });
+      }
+    };
+  }]);
+
+  /**
+   * Kisi secici ("Kimin adina"): admin ve Sekreter icin. Bos birakilirsa kendi adina islem yapilir.
+   * <o3-person-picker person="vm.target" on-change="vm.targetChanged()"></o3-person-picker>
+   */
+  angular.module('ofis360').directive('o3PersonPicker', ['api', function (api) {
+    return {
+      restrict: 'E',
+      scope: { person: '=', onChange: '&' },
+      template:
+        '<div class="person-picker">' +
+        '  <div ng-if="person" class="picked"><strong>{{ person.fullName }}</strong> <span class="muted small">{{ person.departmentName }}</span>' +
+        '    <button type="button" class="btn btn-ghost btn-xs" ng-click="clear()">Kendi adıma</button></div>' +
+        '  <div ng-if="!person"><input type="search" ng-model="state.q" ng-model-options="{ debounce: 300 }" ng-change="search()" placeholder="Kişi ara (en az 2 harf)" />' +
+        '    <ul class="picker-list" ng-if="state.results.length"><li ng-repeat="p in state.results"><button type="button" ng-click="pick(p)">{{ p.fullName }} <span class="muted small">{{ p.title }} · {{ p.departmentName }}</span></button></li></ul></div>' +
+        '</div>',
+      link: function (scope) {
+        scope.state = { q: '', results: [] };
+        scope.search = function () {
+          if (!scope.state.q || scope.state.q.length < 2) { scope.state.results = []; return; }
+          api.get('/Admin/People', { q: scope.state.q }).then(function (list) { scope.state.results = list.slice(0, 8); });
+        };
+        scope.pick = function (p) { scope.person = p; scope.state = { q: '', results: [] }; setTimeout(function () { scope.$apply(function () { scope.onChange(); }); }); };
+        scope.clear = function () { scope.person = null; setTimeout(function () { scope.$apply(function () { scope.onChange(); }); }); };
+      }
+    };
+  }]);
+
+  /** <canvas o3-chart="config">: Chart.js (sayfada yukluyse) ile cizer; config degisince yeniden cizer. */
+  angular.module('ofis360').directive('o3Chart', function () {
+    return {
+      restrict: 'A',
+      link: function (scope, el, attrs) {
+        var chart = null;
+        scope.$watch(attrs.o3Chart, function (config) {
+          if (chart) { chart.destroy(); chart = null; }
+          if (config && window.Chart) chart = new window.Chart(el[0], angular.copy(config));
+        });
+        scope.$on('$destroy', function () { if (chart) chart.destroy(); });
+      }
+    };
+  });
+
+  /**
+   * Kat plani kutusunu pencerenin kalan yuksekligine sigdirir: plan kaydirma gerekmeden tamamen gorunur.
+   * Kucuk ekranlarda en az min-height kadar yer ayrilir. Pencere boyutu degisince yeniden hesaplanir.
+   */
+  angular.module('ofis360').directive('o3FitHeight', ['$window', '$timeout', function ($window, $timeout) {
+    return {
+      restrict: 'A',
+      link: function (scope, el, attrs) {
+        var min = +attrs.o3FitHeight || 420;
+        function fit() {
+          var top = el[0].getBoundingClientRect().top + $window.pageYOffset;
+          // Ust bilesenler cok yer kapliyorsa (kucuk ekran) kutu en az min yuksekliginde kalir; sayfa hafifce kayar.
+          var available = $window.innerHeight - top - 28;
+          el[0].style.height = Math.max(min, Math.round(available)) + 'px';
+        }
+        var onResize = function () { fit(); };
+        $window.addEventListener('resize', onResize);
+        $timeout(fit, 0);
+        scope.$on('$destroy', function () { $window.removeEventListener('resize', onResize); });
       }
     };
   }]);

@@ -1,0 +1,34 @@
+<div class="page-head">
+    <div>
+        <h1>Bildirim merkezi</h1>
+        <p class="muted">Rezervasyon onayları, iptaller, kapatmalar ve hatırlatmalar.</p>
+    </div>
+    <button class="btn btn-ghost" ng-click="vm.readAll()" ng-disabled="vm.busy || !vm.n.unread">Tümünü okundu say</button>
+</div>
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+
+<section class="card" ng-if="vm.n">
+    <div class="chip-filters">
+        <button type="button" class="filter-chip" ng-class="{ active: !vm.onlyUnread }" ng-click="vm.onlyUnread = false">Tümü</button>
+        <button type="button" class="filter-chip" ng-class="{ active: vm.onlyUnread }" ng-click="vm.onlyUnread = true">Okunmamış ({{ vm.n.unread }})</button>
+    </div>
+    <p class="muted empty" ng-if="!vm.visible().length">Bildirim yok.</p>
+    <ul class="notif-list">
+        <li ng-repeat="x in vm.visible()" ng-class="['sev-' + x.severity, { unread: !x.readAt }]">
+            <div>
+                <strong>{{ x.title }}</strong>
+                <p>{{ x.body }}</p>
+                <span class="muted small">{{ x.createdAt | dateTime }}</span>
+            </div>
+            <div class="actions">
+                <a class="btn btn-ghost btn-xs" ng-if="x.link" ng-href="{{ vm.link(x.link) }}">Git</a>
+                <button class="btn btn-ghost btn-xs" ng-if="!x.readAt" ng-click="vm.read(x)" ng-disabled="vm.busy">Okundu</button>
+            </div>
+        </li>
+    </ul>
+    <p class="muted small" ng-if="vm.n.channels.length">Kanallar: <span ng-repeat="c in vm.n.channels">{{ vm.channelLabel(c.key) }} {{ c.enabled ? '(açık)' : '(kapalı)' }}{{ $last ? '' : ', ' }}</span></p>
+</section>
+
+@section Scripts {
+    <script src="~/js/me.js" asp-append-version="true"></script>
+}

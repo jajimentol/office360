@@ -1,0 +1,41 @@
+<div class="page-head">
+    <div>
+        <h1>Kullanım özetim</h1>
+        <p class="muted">Ofis kullanım alışkanlıklarınız ve adil kullanım hakkınız. Bu bilgileri yalnızca siz görürsünüz.</p>
+    </div>
+</div>
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+
+<div class="kpis" ng-if="vm.u">
+    <div class="kpi"><strong>{{ vm.u.totals.deskReservations }}</strong><span>masa rezervasyonu</span></div>
+    <div class="kpi"><strong>{{ vm.u.totals.roomReservations }}</strong><span>toplantı odası rezervasyonu</span></div>
+    <div class="kpi"><strong>{{ vm.u.totals.last30Days }}</strong><span>son 30 günde ofis günü</span></div>
+    <div class="kpi"><strong>{{ vm.u.totals.noShowRate | percent:1 }}</strong><span>gelmeme oranı · {{ vm.u.totals.noShow }} gün</span></div>
+    <div class="kpi"><strong>{{ vm.u.totals.popularShareRate | percent }}</strong><span>popüler masa payı</span></div>
+    <div class="kpi"><strong>{{ vm.u.upcomingCount }}</strong><span>yaklaşan rezervasyon</span></div>
+</div>
+
+<div class="chart-grid" ng-show="vm.u">
+    <section class="card"><h2>Haftalık ofis günleri</h2><div class="chart-box"><canvas o3-chart="vm.charts.weekly"></canvas></div></section>
+    <section class="card"><h2>Gün dağılımı</h2><div class="chart-box"><canvas o3-chart="vm.charts.weekday"></canvas></div></section>
+</div>
+
+<div class="two-col" ng-if="vm.u" style="margin-top:14px">
+    <section class="card">
+        <h2>En sık kullandığınız masalar</h2>
+        <p class="muted" ng-if="!vm.u.favoriteDesks.length">Henüz kayıt yok.</p>
+        <table class="table"><tbody><tr ng-repeat="d in vm.u.favoriteDesks"><td><strong>{{ d.code }}</strong> <span class="chip" ng-if="d.popular">Popüler</span><br /><span class="muted small">{{ d.zoneName }}</span></td><td>{{ d.count }} gün</td></tr></tbody></table>
+    </section>
+    <section class="card">
+        <h2>Kat tercihi</h2>
+        <table class="table"><tbody><tr ng-repeat="f in vm.u.floorPreference"><td>{{ f.name }}</td><td>{{ f.count }} gün</td></tr></tbody></table>
+        <h3>Adil kullanım</h3>
+        <p>Bu hafta <strong>{{ vm.u.fairUse.weeklyUsed }} / {{ vm.u.fairUse.weeklyLimit }}</strong> masa hakkı kullanıldı, <strong>{{ vm.u.fairUse.weeklyRemaining }}</strong> gün kaldı.</p>
+        <p>Popüler masa: son {{ vm.u.fairUse.popularWindowSize }} rezervasyonda {{ vm.u.fairUse.popularUsed }} / {{ vm.u.fairUse.popularMaxUsage }}.</p>
+    </section>
+</div>
+
+@section Scripts {
+    <script src="~/lib/chartjs/chart.umd.min.js"></script>
+    <script src="~/js/me.js" asp-append-version="true"></script>
+}

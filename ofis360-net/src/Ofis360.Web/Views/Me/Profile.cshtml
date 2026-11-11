@@ -1,0 +1,43 @@
+<div class="page-head">
+    <div>
+        <h1>Profil ve tercihler</h1>
+        <p class="muted">Hesap bilgileriniz kurumsal sistemden gelir; tercihlerinizi buradan değiştirebilirsiniz.</p>
+    </div>
+</div>
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+
+<div class="two-col" ng-if="vm.user">
+    <section class="card">
+        <h2>Hesap</h2>
+        <div class="person" style="margin:10px 0">
+            <span class="avatar">{{ vm.user.fullName | initials }}</span>
+            <div><strong>{{ vm.user.fullName }}</strong><br /><span class="muted">{{ vm.user.title }}</span></div>
+        </div>
+        <table class="table">
+            <tbody>
+                <tr><th>E-posta</th><td>{{ vm.user.email }}</td></tr>
+                <tr><th>Departman</th><td>{{ vm.user.departmentName }}</td></tr>
+                <tr><th>Rol</th><td>{{ vm.roleLabel(vm.user.role) }} <span class="chip" ng-if="vm.user.isSecretary">Sekreter</span></td></tr>
+                <tr><th>Kademe</th><td>{{ vm.gradeLabel(vm.user.grade) }}</td></tr>
+                <tr><th>Erişilebilirlik onayı</th><td>{{ vm.user.accessibilityApproved ? 'Var' : 'Yok' }}</td></tr>
+                <tr><th>Rezervasyonlar</th><td>{{ vm.ctx.deskReservationCount }} masa · {{ vm.ctx.roomReservationCount }} toplantı</td></tr>
+            </tbody>
+        </table>
+    </section>
+    <section class="card">
+        <h2>Tercihler</h2>
+        <label class="field"><span>Tercih ettiğim kat</span>
+            <select ng-model="vm.prefs.preferredFloorId" ng-options="f.id as (f.buildingName + ' · ' + f.name) for f in vm.ctx.floors"><option value="">Tercih yok</option></select>
+        </label>
+        <div class="actions" style="flex-direction:column; align-items:flex-start">
+            <label class="switch"><input type="checkbox" ng-model="vm.prefs.prefersQuietZone" /><span>Sessiz alanları tercih ederim</span></label>
+            <label class="switch"><input type="checkbox" ng-model="vm.prefs.notificationsEnabled" /><span>Bildirim almak istiyorum</span></label>
+        </div>
+        <div class="actions end"><button class="btn btn-primary" ng-click="vm.save()" ng-disabled="vm.busy">Kaydet</button></div>
+    </section>
+</div>
+
+@section Scripts {
+    <script src="~/js/admin-common.js" asp-append-version="true"></script>
+    <script src="~/js/me.js" asp-append-version="true"></script>
+}

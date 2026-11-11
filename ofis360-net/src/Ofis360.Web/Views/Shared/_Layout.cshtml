@@ -27,7 +27,9 @@
             <div class="topbar-inner">
                 <a class="brand" href="/Plan"><span class="brand-mark">O</span>@appName</a>
                 <nav class="nav" aria-label="Ana menü">
+                    <a href="/Home" class="@(controller == "Home" ? "active" : null)">Ana sayfa</a>
                     <a href="/Plan" class="@(controller == "Plan" ? "active" : null)">Kat planı</a>
+                    <a href="/Rooms" class="@(controller == "Rooms" ? "active" : null)">Toplantı odası</a>
                     <a href="/Bookings" class="@(controller == "Bookings" ? "active" : null)">Rezervasyonlarım</a>
                     @if (presenceAllowed)
                     {
@@ -47,10 +49,11 @@
                     }
                 </nav>
                 <div class="user">
-                    <div class="user-text">
+                    <a href="/Me/Notifications" class="bell" o3-unread aria-label="Bildirimler">🔔<span class="badge" ng-if="unread">{{ unread }}</span></a>
+                    <a href="/Me/Profile" class="user-text" title="Profil ve tercihler">
                         <strong>@userName</strong>
                         <span>@roleLabel@(string.IsNullOrEmpty(userTitle) ? "" : " · " + userTitle)</span>
-                    </div>
+                    </a>
                     <form method="post" action="/Account/Logout">
                         @Html.AntiForgeryToken()
                         <button type="submit" class="btn btn-ghost btn-sm">Çıkış</button>
@@ -81,6 +84,10 @@
     </main>
     <div class="toasts" o3-toasts></div>
 
+    @if (userName is not null)
+    {
+        <script>window.o3User = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new { role, isSecretary, canActForOthers = role == "ADMIN" || isSecretary }));</script>
+    }
     <script src="~/lib/angular/angular.min.js"></script>
     <script src="~/lib/angular/angular-locale_tr-tr.js"></script>
     <script src="~/js/app.js" asp-append-version="true"></script>

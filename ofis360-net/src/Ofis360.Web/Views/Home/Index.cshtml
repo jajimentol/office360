@@ -1,0 +1,82 @@
+<div class="page-head">
+    <div>
+        <h1>Hoş geldiniz, @(ViewData["UserName"])</h1>
+        <p class="muted">{{ vm.d.today | dayLong }}</p>
+    </div>
+    <div class="actions">
+        <a class="btn btn-primary" href="/Plan">Masa ayır</a>
+        <a class="btn btn-ghost" href="/Rooms">Toplantı odası ayır</a>
+    </div>
+</div>
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+<div class="alert alert-info" ng-if="vm.d.announcement"><strong>Duyuru:</strong> {{ vm.d.announcement }}</div>
+
+<div class="two-col" ng-if="vm.d">
+    <section class="card">
+        <h2>Bugün ofiste misin?</h2>
+        <div ng-if="vm.d.todayDesk" class="mine-box">
+            <span class="label">Bugünkü masanız</span>
+            <strong>{{ vm.d.todayDesk.desk.code }}</strong>
+            <span class="muted">{{ vm.d.todayDesk.desk.floor.name }} · {{ vm.d.todayDesk.desk.zone.name }} · {{ vm.statusLabel(vm.d.todayDesk.status) }}</span>
+            <div class="actions">
+                <button class="btn btn-primary btn-sm" ng-if="vm.d.todayDesk.status === 'BOOKED'" ng-click="vm.checkIn()" ng-disabled="vm.busy">Check-in yap</button>
+                <span class="chip chip-ok" ng-if="vm.d.todayDesk.status === 'CHECKED_IN'">Check-in yapıldı</span>
+                <a class="btn btn-ghost btn-sm" ng-href="/Plan?date={{ vm.d.today }}&floor={{ vm.d.todayDesk.desk.floorId }}">Planda gör</a>
+            </div>
+        </div>
+        <div ng-if="!vm.d.todayDesk">
+            <p class="muted">Bugün için masa rezervasyonunuz yok.</p>
+            <a class="btn btn-primary btn-sm" ng-href="/Plan?date={{ vm.d.today }}">Bugün için masa seç</a>
+        </div>
+        <div ng-if="vm.d.todayRooms.length" class="my-rooms">
+            <span class="label">Bugünkü toplantılarınız</span>
+            <div class="slot-row" ng-repeat="r in vm.d.todayRooms"><span>{{ r.startMinutes | hm }}–{{ r.endMinutes | hm }}</span><strong>{{ r.title }}</strong><span class="muted">{{ r.room.name }}</span></div>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Yaklaşan rezervasyonunuz</h2>
+        <p class="muted" ng-if="!vm.d.nextDesk && !vm.d.nextRoom">Yaklaşan rezervasyonunuz yok.</p>
+        <div class="slot-row" ng-if="vm.d.nextDesk">
+            <span>{{ vm.d.nextDesk.date | dayShort }} {{ vm.d.nextDesk.date | weekday }}</span><strong>Masa {{ vm.d.nextDesk.desk.code }}</strong><span class="muted">{{ vm.d.nextDesk.desk.floor.name }}</span>
+        </div>
+        <div class="slot-row" ng-if="vm.d.nextRoom">
+            <span>{{ vm.d.nextRoom.date | dayShort }} {{ vm.d.nextRoom.startMinutes | hm }}</span><strong>{{ vm.d.nextRoom.title }}</strong><span class="muted">{{ vm.d.nextRoom.room.name }}</span>
+        </div>
+        <a href="/Bookings" class="small">Tüm rezervasyonlarım ›</a>
+    </section>
+
+    <section class="card">
+        <h2>Adil kullanım hakkınız</h2>
+        <p class="muted small">Bu hafta ({{ vm.d.fairUse.weekStartKey | dayShort }} haftası)</p>
+        <div class="meter">
+            <div class="meter-head"><span>Haftalık masa hakkı</span><strong>{{ vm.d.fairUse.weeklyUsed }} / {{ vm.d.fairUse.weeklyLimit }}</strong></div>
+            <div class="bar"><span ng-style="{ width: vm.pct(vm.d.fairUse.weeklyUsed, vm.d.fairUse.weeklyLimit) + '%' }"></span></div>
+            <span class="muted small">{{ vm.d.fairUse.weeklyRemaining }} gün hakkınız kaldı.</span>
+        </div>
+        <div class="meter">
+            <div class="meter-head"><span>Popüler masa kullanım payı</span><strong>{{ vm.d.fairUse.popularUsed }} / {{ vm.d.fairUse.popularMaxUsage }}</strong></div>
+            <div class="bar"><span ng-style="{ width: vm.pct(vm.d.fairUse.popularUsed, vm.d.fairUse.popularMaxUsage) + '%' }" ng-class="{ warn: vm.d.fairUse.popularRestricted }"></span></div>
+            <span class="muted small">Son {{ vm.d.fairUse.popularWindowSize }} rezervasyonda en fazla {{ vm.d.fairUse.popularMaxUsage }} popüler masa.<span ng-if="vm.d.fairUse.popularRestricted" class="error-text"> Şu an popüler masa seçemezsiniz.</span></span>
+        </div>
+        <p class="muted small">Rezervasyonlar en fazla {{ vm.d.advanceDays }} iş günü öncesinden yapılabilir.</p>
+    </section>
+
+    <section class="card">
+        <h2>Bugünkü ofis doluluğu</h2>
+        <table class="table">
+            <tbody>
+                <tr ng-repeat="f in vm.d.floors">
+                    <td>{{ f.name }}<br /><span class="muted small">{{ f.buildingName }}</span></td>
+                    <td class="muted small nowrap">{{ f.availableDesks }} boş / {{ f.totalDesks }}</td>
+                    <td style="width:40%"><div class="bar"><span ng-style="{ width: f.occupancyRate + '%' }"></span></div></td>
+                    <td><a class="btn btn-ghost btn-xs" ng-href="/Plan?date={{ vm.d.today }}&floor={{ f.id }}">Plan</a></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+</div>
+
+@section Scripts {
+    <script src="~/js/home.js" asp-append-version="true"></script>
+}
