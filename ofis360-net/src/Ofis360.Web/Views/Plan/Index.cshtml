@@ -1,0 +1,196 @@
+@{
+    ViewData["Title"] = "Kat planı";
+    ViewData["Page"] = "page-plan";
+    ViewData["NgController"] = "PlanCtrl as vm";
+}
+<div class="page-head">
+    <div>
+        <h1>Kat planı</h1>
+        <p class="muted">Gün seçin, planda masanızı ya da toplantı odanızı işaretleyin.</p>
+    </div>
+    <label class="field field-inline" ng-if="vm.floors.length">
+        <span>Kat</span>
+        <select ng-model="vm.floorId" ng-change="vm.changeFloor()"
+                ng-options="f.id as (f.buildingName + ' · ' + f.name) group by f.buildingName for f in vm.floors"></select>
+    </label>
+</div>
+
+<div class="card date-card">
+    <o3-date-strip selected="vm.date" min="vm.today" max="vm.maxDay" blocked="vm.blockedDays" on-change="vm.changeDate(day)"></o3-date-strip>
+    <div class="date-caption">
+        <strong>{{ vm.date | dayLong }}</strong>
+        <span class="muted" ng-if="vm.plan">
+            · {{ vm.plan.summary.available }} uygun masa · {{ vm.plan.summary.reserved }} dolu masa
+        </span>
+    </div>
+</div>
+
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+
+<div class="plan-layout">
+    <section class="card plan-card">
+        <div class="plan-toolbar">
+            <ul class="legend">
+                <li><span class="sw sw-available"></span>Uygun masa</li>
+                <li><span class="sw sw-mine"></span>Sizin masanız</li>
+                <li><span class="sw sw-booked"></span>Dolu masa / tamamen dolu oda</li>
+                <li><span class="sw sw-room-partial"></span>Kısmen dolu oda</li>
+                <li><span class="sw sw-room-free"></span>Boş oda</li>
+                <li><span class="sw sw-restricted"></span>Kural gereği seçilemez</li>
+                <li><span class="sw sw-closed"></span>Kapalı</li>
+            </ul>
+            <div class="zoom">
+                <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.zoomBy(-0.2)" aria-label="Uzaklaştır">−</button>
+                <span>{{ vm.zoom * 100 | number:0 }}%</span>
+                <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.zoomBy(0.2)" aria-label="Yakınlaştır">+</button>
+            </div>
+        </div>
+        <div class="plan-scroll" ng-class="{ loading: vm.loading }">
+            <div class="plan-canvas" ng-style="{ width: (vm.zoom * 100) + '%' }">
+                <o3-floor-plan plan="vm.plan" selected-desk-id="vm.selectedDeskId" selected-room-id="vm.selectedRoomId"
+                               on-desk="vm.selectDesk(id)" on-room="vm.selectRoom(id)"></o3-floor-plan>
+            </div>
+            <div class="plan-empty" ng-if="!vm.plan && !vm.loading && !vm.error">Bu kat için plan bulunamadı.</div>
+        </div>
+    </section>
+
+    <aside class="card side">
+        <!-- Seçim yok -->
+        <div ng-if="!vm.desk && !vm.room">
+            <h2>{{ vm.date | dayLong }}</h2>
+            <div ng-if="vm.myDesk" class="mine-box">
+                <span class="label">Bu günkü masanız</span>
+                <strong>{{ vm.myDesk.desk.code }}</strong>
+                <span class="muted">{{ vm.myDesk.desk.floor.name }} · {{ vm.statusLabel(vm.myDesk.status) }}</span>
+                <div class="actions">
+                    <button class="btn btn-primary btn-sm" ng-if="vm.canCheckIn(vm.myDesk)" ng-click="vm.checkIn(vm.myDesk)" ng-disabled="vm.busy">Check-in yap</button>
+                    <button class="btn btn-danger-ghost btn-sm" ng-if="vm.myDesk.status === 'BOOKED'" ng-click="vm.cancelDesk(vm.myDesk)" ng-disabled="vm.busy">İptal et</button>
+                </div>
+            </div>
+            <p class="muted" ng-if="!vm.myDesk">Bu gün için masa rezervasyonunuz yok. Plandan uygun (beyaz) bir masa seçin.</p>
+            <div ng-if="vm.myRoomsToday.length" class="my-rooms">
+                <span class="label">Bu günkü toplantılarınız</span>
+                <div class="slot-row" ng-repeat="r in vm.myRoomsToday">
+                    <span>{{ r.startMinutes | hm }}–{{ r.endMinutes | hm }}</span>
+                    <strong>{{ r.room.name }}</strong>
+                    <span class="muted">{{ r.title }}</span>
+                </div>
+            </div>
+            <p class="hint">Bir toplantı odasına tıklayarak gün içindeki boş saatleri görebilir, 15 dakikalık dilimlerle rezervasyon yapabilirsiniz.</p>
+        </div>
+
+        <!-- Masa seçili -->
+        <div ng-if="vm.desk">
+            <div class="side-head">
+                <div>
+                    <span class="label">Masa</span>
+                    <h2>{{ vm.desk.code }}</h2>
+                    <span class="muted">{{ vm.desk.zoneName }}</span>
+                </div>
+                <button class="btn btn-ghost btn-sm" ng-click="vm.clearSelection()" aria-label="Seçimi kaldır">✕</button>
+            </div>
+            <span class="state-pill" ng-class="'state-' + vm.desk.state">{{ vm.deskStateLabel(vm.desk.state) }}</span>
+            <ul class="tags" ng-if="vm.desk.features.length || vm.desk.zoneQuiet || vm.desk.zoneWindowSide">
+                <li ng-if="vm.desk.zoneQuiet">Sessiz alan</li>
+                <li ng-if="vm.desk.zoneWindowSide && !vm.hasFeature('Pencere yanı')">Pencere yanı</li>
+                <li ng-repeat="f in vm.desk.features">{{ f.name }}</li>
+            </ul>
+            <p class="muted" ng-if="vm.desk.notes">{{ vm.desk.notes }}</p>
+
+            <div ng-if="vm.desk.state === 'RESERVED'">
+                <p ng-if="vm.desk.occupant"><strong>{{ vm.desk.occupant.fullName }}</strong><br /><span class="muted">{{ vm.desk.occupant.departmentName }}</span></p>
+                <p class="muted" ng-if="!vm.desk.occupant">Bu masa başka bir çalışana ayrılmış.</p>
+            </div>
+            <div ng-if="vm.desk.state === 'CLOSED'"><p class="muted">{{ vm.desk.closureNote || 'Bu masa bu gün kullanıma kapalı.' }}</p></div>
+            <div ng-if="vm.desk.violations.length && vm.desk.state !== 'MINE' && vm.desk.state !== 'RESERVED'">
+                <ul class="violations">
+                    <li ng-repeat="v in vm.desk.violations" ng-class="{ warn: v.severity === 'WARN' }">
+                        <strong>{{ v.title }}</strong> {{ v.message }}
+                    </li>
+                </ul>
+            </div>
+
+            <div ng-if="vm.desk.selectable && (vm.desk.state === 'AVAILABLE' || vm.desk.state === 'ACCESSIBLE')" class="form">
+                <p ng-if="vm.myDesk" class="alert alert-warn">Bu gün için zaten {{ vm.myDesk.desk.code }} masanız var. Her gün tek masa ayırabilirsiniz.</p>
+                <label class="field">
+                    <span>Not (isteğe bağlı)</span>
+                    <input type="text" ng-model="vm.deskNote" maxlength="200" placeholder="Örn. öğleden sonra geleceğim" />
+                </label>
+                <button class="btn btn-primary btn-block" ng-click="vm.reserveDesk()" ng-disabled="vm.busy || vm.myDesk">
+                    {{ vm.date | dayLong }} için ayır
+                </button>
+            </div>
+
+            <div ng-if="vm.desk.state === 'MINE' && vm.myDesk" class="actions">
+                <button class="btn btn-primary" ng-if="vm.canCheckIn(vm.myDesk)" ng-click="vm.checkIn(vm.myDesk)" ng-disabled="vm.busy">Check-in yap</button>
+                <span class="chip chip-ok" ng-if="vm.myDesk.status === 'CHECKED_IN'">Check-in yapıldı</span>
+                <button class="btn btn-danger-ghost" ng-if="vm.myDesk.status === 'BOOKED'" ng-click="vm.cancelDesk(vm.myDesk)" ng-disabled="vm.busy">Rezervasyonu iptal et</button>
+            </div>
+        </div>
+
+        <!-- Oda seçili -->
+        <div ng-if="vm.room">
+            <div class="side-head">
+                <div>
+                    <span class="label">Toplantı odası</span>
+                    <h2>{{ vm.room.name }}</h2>
+                    <span class="muted">{{ vm.room.code }} · {{ vm.room.capacity }} kişilik</span>
+                </div>
+                <button class="btn btn-ghost btn-sm" ng-click="vm.clearSelection()" aria-label="Seçimi kaldır">✕</button>
+            </div>
+            <span class="state-pill" ng-class="'room-' + (vm.room.closed ? 'CLOSED' : vm.room.dayState)">{{ vm.roomStateLabel(vm.room) }}</span>
+            <ul class="tags" ng-if="vm.room.features.length"><li ng-repeat="f in vm.room.features">{{ f.name }}</li></ul>
+
+            <div ng-if="vm.roomAvail && !vm.roomAvail.closed">
+                <p class="alert alert-warn" ng-if="vm.roomAvail.accessReason">{{ vm.roomAvail.accessReason }}</p>
+                <div class="timeline-head">
+                    <span class="label">Gün içi doluluk</span>
+                    <span class="muted">{{ vm.roomWork.start | hm }}–{{ vm.roomWork.end | hm }}, {{ vm.roomWork.step }} dk dilimler</span>
+                </div>
+                <div class="timeline" role="group" aria-label="Saat dilimleri">
+                    <button type="button" class="slot" ng-repeat="s in vm.slots track by s.start"
+                            ng-class="{ busy: s.busy, mine: s.mine, past: s.past, picked: vm.isPicked(s), hour: s.start % 60 === 0 }"
+                            ng-disabled="s.busy || s.past" ng-click="vm.pickSlot(s)"
+                            title="{{ s.start | hm }}–{{ s.end | hm }}{{ s.busy ? ' · ' + s.label : '' }}">
+                        <span ng-if="s.start % 60 === 0">{{ s.start | hm }}</span>
+                    </button>
+                </div>
+                <p class="hint">Başlangıç dilimine, sonra bitiş dilimine tıklayın.</p>
+
+                <div class="busy-list" ng-if="vm.roomAvail.busySlots.length">
+                    <div class="slot-row" ng-repeat="b in vm.roomAvail.busySlots">
+                        <span>{{ b.startMinutes | hm }}–{{ b.endMinutes | hm }}</span>
+                        <strong>{{ b.title }}</strong>
+                        <button class="btn btn-danger-ghost btn-xs" ng-if="vm.myRoomBooking(b.id)" ng-click="vm.cancelRoom(vm.myRoomBooking(b.id))" ng-disabled="vm.busy">İptal</button>
+                    </div>
+                </div>
+
+                <form class="form" ng-if="vm.pick.start != null" ng-submit="vm.reserveRoom()" novalidate>
+                    <div class="pick-summary">
+                        <strong>{{ vm.pick.start | hm }}–{{ vm.pick.end | hm }}</strong>
+                        <span class="muted">{{ vm.pick.end - vm.pick.start }} dk</span>
+                    </div>
+                    <label class="field">
+                        <span>Toplantı başlığı</span>
+                        <input type="text" ng-model="vm.roomForm.title" maxlength="120" required placeholder="Örn. Haftalık ekip toplantısı" />
+                    </label>
+                    <label class="field">
+                        <span>Amaç</span>
+                        <select ng-model="vm.roomForm.purpose" ng-options="p for p in vm.purposes"></select>
+                    </label>
+                    <label class="field">
+                        <span>Katılımcı sayısı</span>
+                        <input type="number" ng-model="vm.roomForm.attendeeCount" min="1" max="{{ vm.room.capacity }}" />
+                    </label>
+                    <button type="submit" class="btn btn-primary btn-block" ng-disabled="vm.busy">Odayı ayır</button>
+                </form>
+            </div>
+            <p class="muted" ng-if="vm.roomAvail.closed">{{ vm.roomAvail.closureNote || 'Bu oda bu gün kullanıma kapalı.' }}</p>
+            <div class="loading" ng-if="vm.roomLoading">Yükleniyor…</div>
+        </div>
+    </aside>
+</div>
+
+@section Scripts {
+    <script src="~/js/plan.js" asp-append-version="true"></script>
+}

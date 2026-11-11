@@ -1,0 +1,45 @@
+@{
+    ViewData["Title"] = "Giriş";
+    ViewData["Page"] = "page-login";
+    ViewData["NgController"] = "LoginCtrl as vm";
+}
+<div class="login" ng-init="vm.returnUrl = '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(ViewData["ReturnUrl"] as string ?? "/Plan"))'">
+    <section class="login-intro">
+        <div class="brand brand-lg"><span class="brand-mark">O</span>Ofis360</div>
+        <h1>Hibrit ofis ve ortak alan rezervasyonu</h1>
+        <p>Masanı ve toplantı odanı kat planı üzerinden seç, ofiste kimlerin olacağını gör.</p>
+        <ul class="intro-stats" ng-if="vm.intro">
+            <li><strong>{{ vm.intro.deskCount }}</strong><span>rezervasyona açık masa</span></li>
+            <li><strong>{{ vm.intro.roomCount }}</strong><span>toplantı odası</span></li>
+            <li><strong>{{ vm.intro.floorCount }}</strong><span>kat</span></li>
+        </ul>
+    </section>
+
+    <section class="login-panel card">
+        <h2>Giriş yap</h2>
+        <p class="muted" ng-if="vm.status === 'DEMO'">Demo ortamı: bir hesap seçerek devam edin.</p>
+        <p class="muted" ng-if="vm.status && vm.status !== 'DEMO'">Kurumsal giriş bu ekrana henüz taşınmadı. Lütfen kurumsal portal üzerinden giriş yapın.</p>
+        <div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+        <div class="loading" ng-if="vm.loading">Yükleniyor…</div>
+
+        <div ng-repeat="group in vm.groups" class="account-group">
+            <h3>{{ group.label }}</h3>
+            <ul class="account-list">
+                <li ng-repeat="a in group.accounts">
+                    <button type="button" class="account" ng-click="vm.login(a)" ng-disabled="vm.busy">
+                        <span class="avatar" ng-style="{ background: a.department.color }">{{ a.fullName | initials }}</span>
+                        <span class="account-text">
+                            <strong>{{ a.fullName }}</strong>
+                            <span>{{ a.title }} · {{ a.department.name }}</span>
+                        </span>
+                        <span class="chip" ng-if="a.isSecretary">Sekreter</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script src="~/js/login.js" asp-append-version="true"></script>
+}

@@ -8,7 +8,8 @@ Taşıma planı ve karar kayıtları: [docs/TASIMA-HARITASI.md](docs/TASIMA-HARI
 | Bileşen | Port | Not |
 |---|---|---|
 | API (Kestrel) | 5210 | `src/Ofis360.Api/appsettings.json` → `Ofis360:Port` |
-| Angular dev server | 4210 | `/api` → 5210 proxy (`web/proxy.conf.json`) |
+| Angular dev server | 4210 | `/api` → 5210 proxy (`web/proxy.conf.json`) — eski arayüz, MVC tamamlanınca kaldırılacak |
+| MVC + AngularJS (yeni arayüz) | 5220 | `src/Ofis360.Web`; API'yi `Ofis360Web:ApiBaseUrl` üzerinden HTTP ile çağırır |
 | Oracle Free | 1521 | `docker/oracle/compose.yml`, PDB `FREEPDB1` |
 
 3000, 3210, 3300 ve 5555 başka uygulamalara aittir; kullanılmaz.
@@ -56,6 +57,24 @@ dotnet run --project src/Ofis360.Api              # http://localhost:5210/api/he
 cd web; npm start                                 # http://localhost:4210  (ng serve --port 4210)
 # Demo hesapla giriş: /giris → rol seç. 20 ekran kaynakla aynı yollarda (/panel/*, /yonetim, /admin/*).
 ```
+
+## Yeni arayüz: ASP.NET Core MVC + AngularJS 1.8.2 (`src/Ofis360.Web`)
+
+```powershell
+dotnet run --project src/Ofis360.Seed -- settings   # yeni ayarları ekler (presence.managers_only); tekrar çalıştırmak güvenli
+dotnet run --project src/Ofis360.Api               # 5210
+dotnet run --project src/Ofis360.Web               # http://localhost:5220  → /Account/Login, demo hesap seç
+```
+
+- AngularJS yalnızca MVC controller'larını çağırır (`/Plan/*`, `/Bookings/*`, `/Presence/*`, `/Account/*`). MVC, API'yi tipli `HttpClient`
+  (`Api/ApiClient.cs`) ile çağırır; API oturum bileti MVC'nin şifreli kimlik çerezinde durur, tarayıcı API'yi görmez.
+- Antiforgery: MVC `XSRF-TOKEN` çerezini yazar, AngularJS `$http` bunu `X-XSRF-TOKEN` başlığıyla geri yollar.
+- AngularJS 1.8.2 yerel kopya: `wwwroot/lib/angular` (intranet için CDN gerekmez). Derleme adımı yok.
+- Ekranlar: Kat planı (tarih şeridi + kroki + masa/oda rezervasyonu), Rezervasyonlarım, Ofiste kim var.
+- Renkler: dolu masa ve tamamen dolu oda `#FF0025`, kendi masanız `#0135EB`, kısmen dolu oda `#6B8BF5`.
+  Oda, mesai saatlerindeki tüm dilimler doluysa "tamamen dolu" sayılır (`RoomDayStates`, `AvailabilityService`).
+- "Ofiste kim var": seçilen gün aktif masa rezervasyonu olanlar (oda kayıtları sayılmaz), check-in durumu, geçmiş günler açık.
+  Görünürlük `presence.managers_only` ayarıyla (admin sayfadaki düğmeyle değiştirir): kapalıyken herkes, açıkken yönetici + admin.
 
 ## Testler
 

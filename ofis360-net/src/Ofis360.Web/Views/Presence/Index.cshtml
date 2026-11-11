@@ -1,0 +1,72 @@
+@{
+    ViewData["Title"] = "Ofiste kim var";
+    ViewData["Page"] = "page-presence";
+    ViewData["NgController"] = "PresenceCtrl as vm";
+    var isAdmin = (ViewData["UserRole"] as string) == "ADMIN";
+}
+<div class="page-head" ng-init="vm.isAdmin = @(isAdmin ? "true" : "false")">
+    <div>
+        <h1>Ofiste kim var</h1>
+        <p class="muted">Seçilen gün masa rezervasyonu olan çalışanlar.</p>
+    </div>
+    <div class="visibility" ng-if="vm.isAdmin && vm.data">
+        <span class="label">Bu sayfayı kimler görebilir?</span>
+        <div class="segmented">
+            <button type="button" ng-class="{ active: !vm.data.managersOnly }" ng-click="vm.setVisibility(false)" ng-disabled="vm.busy">Herkes</button>
+            <button type="button" ng-class="{ active: vm.data.managersOnly }" ng-click="vm.setVisibility(true)" ng-disabled="vm.busy">Yalnızca yöneticiler</button>
+        </div>
+    </div>
+</div>
+
+<div class="card date-card">
+    <o3-date-strip selected="vm.date" allow-past="true" on-change="vm.changeDate(day)"></o3-date-strip>
+    <div class="date-caption"><strong>{{ vm.date | dayLong }}</strong></div>
+</div>
+
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+
+<section class="card" ng-if="vm.data">
+    <div class="presence-head">
+        <div class="stats">
+            <div class="stat"><strong>{{ vm.data.total }}</strong><span>kişi ofiste</span></div>
+            <div class="stat"><strong>{{ vm.data.checkedIn }}</strong><span>check-in yaptı</span></div>
+            <div class="stat"><strong>{{ vm.data.total - vm.data.checkedIn }}</strong><span>henüz gelmedi</span></div>
+        </div>
+        <div class="filters">
+            <input type="search" placeholder="İsim, departman veya masa ara" ng-model="vm.filter.q" ng-model-options="{ debounce: 300 }" ng-change="vm.load()" />
+            <select ng-model="vm.filter.floorId" ng-change="vm.load()" ng-options="f.id as f.name for f in vm.data.floors">
+                <option value="">Tüm katlar</option>
+            </select>
+            <select ng-model="vm.filter.departmentId" ng-change="vm.load()" ng-options="d.id as d.name for d in vm.data.departments">
+                <option value="">Tüm departmanlar</option>
+            </select>
+        </div>
+    </div>
+
+    <p class="muted empty" ng-if="!vm.data.people.length">Bu gün için kayıt bulunamadı.</p>
+    <table class="table" ng-if="vm.data.people.length">
+        <thead>
+            <tr><th>Çalışan</th><th>Departman</th><th>Kat / masa</th><th>Durum</th></tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="p in vm.data.people" ng-class="{ me: p.isMe }">
+                <td>
+                    <div class="person">
+                        <span class="avatar" ng-style="{ background: p.departmentColor }">{{ p.fullName | initials }}</span>
+                        <div><strong>{{ p.fullName }}</strong><span class="muted" ng-if="p.isMe"> (siz)</span><br /><span class="muted">{{ p.title }}</span></div>
+                    </div>
+                </td>
+                <td>{{ p.departmentName }}</td>
+                <td><a ng-href="/Plan?date={{ vm.data.date }}&floor={{ p.floorId }}">{{ p.floorName }}</a> · {{ p.deskCode }}</td>
+                <td>
+                    <span class="chip chip-ok" ng-if="p.checkedIn">Check-in {{ p.checkedInAt ? (p.checkedInAt | date:'HH:mm') : '' }}</span>
+                    <span class="chip" ng-if="!p.checkedIn">Rezervasyonlu</span>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+@section Scripts {
+    <script src="~/js/presence.js" asp-append-version="true"></script>
+}

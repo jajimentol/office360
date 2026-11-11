@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    ASP.NET Core MVC + AngularJS 1.8.2 on yuzu. Veritabanina dogrudan baglanmaz: veri ve aksiyonlar icin
+    Ofis360.Api'yi HTTP ile cagirir. AngularJS yalnizca bu projenin controller'larini cagirir.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Ofis360.Web</RootNamespace>
+  </PropertyGroup>
+
+</Project>

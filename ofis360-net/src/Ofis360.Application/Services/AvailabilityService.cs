@@ -25,9 +25,33 @@ public sealed record DeskView(
 public sealed record ZoneView(
     string Id, string Code, string Name, string Kind, int X, int Y, int Width, int Height, bool WindowSide, bool Quiet, bool Reservable);
 
+/// <param name="DayState">Odanin secilen gundeki dolulugu: FREE, PARTIAL (bazi dilimler dolu) veya FULL (mesai saatlerinin tamami dolu).</param>
+/// <param name="BookedMinutes">Mesai saatleri icindeki dolu dakika (cakisan kayitlar birlestirilir).</param>
 public sealed record RoomView(
     string Id, string Code, string Name, int Capacity, int X, int Y, int Width, int Height, bool Active,
-    IReadOnlyList<FeatureView> Features, bool Closed);
+    IReadOnlyList<FeatureView> Features, bool Closed, string DayState = RoomDayStates.Free, int BookedMinutes = 0);
+
+public static class RoomDayStates
+{
+    public const string Free = "FREE";
+    public const string Partial = "PARTIAL";
+    public const string Full = "FULL";
+
+    /// <summary>Dolu dakikayi mesai araligina kirparak birlestirir; tum aralik doluysa FULL.</summary>
+    public static (string State, int BookedMinutes) Evaluate(IEnumerable<(int Start, int End)> busy, int workStart, int workEnd)
+    {
+        var booked = 0;
+        var cursor = workStart;
+        foreach (var (start, end) in busy.Select(b => (Math.Max(b.Start, workStart), Math.Min(b.End, workEnd))).Where(b => b.Item1 < b.Item2).OrderBy(b => b.Item1))
+        {
+            var from = Math.Max(start, cursor);
+            if (end > from) { booked += end - from; cursor = end; }
+        }
+        var total = workEnd - workStart;
+        var state = booked <= 0 ? Free : total > 0 && booked >= total ? Full : Partial;
+        return (state, booked);
+    }
+}
 
 public sealed record FloorPlanFloorInfo(
     string Id, int Number, string Name, string Description, bool Reservable, int PlanWidth, int PlanHeight,
@@ -58,6 +82,7 @@ public sealed class AvailabilityService(IOfis360Db db, RuleService rules, IClock
 {
     private static readonly string[] OccupyingDesk = DeskReservationStatus.Occupying.ToArray();
     private static readonly string[] HoldingDesk = DeskReservationStatus.Holding.ToArray();
+    private static readonly string[] OccupyingRoom = RoomReservationStatus.Occupying.ToArray();
 
     public static PlanElement ToPlanElement(FloorPlanElement e) => new(
         e.Id, e.Type, e.Label, e.X, e.Y, e.Width, e.Height, e.Rotation, PlanGeometry.ParseStyle(e.Style),
@@ -143,6 +168,15 @@ public sealed class AvailabilityService(IOfis360Db db, RuleService rules, IClock
         var closures = await GetClosureMapsAsync(dayKey, ct);
         var context = await BuildUserDeskContextAsync(user.Id, dayKey, ct);
 
+        var roomBusy = (await db.RoomReservations.AsNoTracking()
+                .Where(r => r.Date == day && OccupyingRoom.Contains(r.Status) && r.Room.FloorId == floorId)
+                .Select(r => new { r.RoomId, r.StartMinutes, r.EndMinutes })
+                .ToListAsync(ct))
+            .ToLookup(r => r.RoomId, r => (r.StartMinutes, r.EndMinutes));
+        var (workStart, workEnd) = settings.RoomWorkingHours.Enabled && settings.RoomWorkingHours.EndMinutes > settings.RoomWorkingHours.StartMinutes
+            ? (settings.RoomWorkingHours.StartMinutes, settings.RoomWorkingHours.EndMinutes)
+            : (DefaultWorkingHours.StartMinutes, DefaultWorkingHours.EndMinutes);
+
         var occupancy = reservations
             .GroupBy(r => r.DeskId)
             .ToDictionary(g => g.Key, g => new Occupant(g.First().UserId, g.First().FullName, g.First().DepartmentName));
@@ -197,9 +231,14 @@ public sealed class AvailabilityService(IOfis360Db db, RuleService rules, IClock
             floor.Zones.Select(z => new ZoneView(z.Id, z.Code, z.Name, z.Kind, z.X, z.Y, z.Width, z.Height, z.WindowSide, z.Quiet, z.Reservable)).ToList(),
             floor.Elements.Select(ToPlanElement).ToList(),
             desks,
-            floor.Rooms.Select(room => new RoomView(room.Id, room.Code, room.Name, room.Capacity, room.X, room.Y, room.Width, room.Height, room.Active,
-                room.Features.Select(l => ToFeatureView(l.Feature)).ToList(),
-                closures.RoomClosures.ContainsKey(room.Id) || floorClosureNote is not null || !room.Active)).ToList(),
+            floor.Rooms.Select(room =>
+            {
+                var (dayState, bookedMinutes) = RoomDayStates.Evaluate(roomBusy[room.Id], workStart, workEnd);
+                return new RoomView(room.Id, room.Code, room.Name, room.Capacity, room.X, room.Y, room.Width, room.Height, room.Active,
+                    room.Features.Select(l => ToFeatureView(l.Feature)).ToList(),
+                    closures.RoomClosures.ContainsKey(room.Id) || floorClosureNote is not null || !room.Active,
+                    dayState, bookedMinutes);
+            }).ToList(),
             new FloorPlanSummary(reservableDesks, available, reserved, closed, restricted,
                 reservableDesks > 0 ? (double)reserved / reservableDesks * 100 : 0));
     }

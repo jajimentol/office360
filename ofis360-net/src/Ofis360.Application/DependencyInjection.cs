@@ -34,6 +34,7 @@ public static class DependencyInjection
         services.TryAddSingleton<IAttendanceFeed, NotConfiguredAttendanceFeed>();
         services.AddScoped<NoShowService>();
         services.AddScoped<AttendanceReportService>();
+        services.AddScoped<PresenceService>();
         services.AddScoped<Identity.SessionService>();
         services.AddScoped<Identity.SsoSignInService>();
         return services;

@@ -1,0 +1,59 @@
+@{
+    var appName = ViewData["AppName"] as string ?? "Ofis360";
+    var userName = ViewData["UserName"] as string;
+    var userTitle = ViewData["UserTitle"] as string;
+    var role = ViewData["UserRole"] as string;
+    var presenceAllowed = ViewData["PresenceAllowed"] as bool? ?? false;
+    var controller = ViewContext.RouteData.Values["controller"] as string;
+    var pageClass = ViewData["Page"] as string ?? "";
+    var ngController = ViewData["NgController"] as string;
+    var roleLabel = role switch { "ADMIN" => "Admin", "MANAGER" => "Yönetici", _ => "Çalışan" };
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] · @appName</title>
+    <link rel="icon" href="~/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body ng-app="ofis360" ng-strict-di>
+    @if (userName is not null)
+    {
+        <header class="topbar">
+            <div class="topbar-inner">
+                <a class="brand" href="/Plan"><span class="brand-mark">O</span>@appName</a>
+                <nav class="nav" aria-label="Ana menü">
+                    <a href="/Plan" class="@(controller == "Plan" ? "active" : null)">Kat planı</a>
+                    <a href="/Bookings" class="@(controller == "Bookings" ? "active" : null)">Rezervasyonlarım</a>
+                    @if (presenceAllowed)
+                    {
+                        <a href="/Presence" class="@(controller == "Presence" ? "active" : null)">Ofiste kim var</a>
+                    }
+                </nav>
+                <div class="user">
+                    <div class="user-text">
+                        <strong>@userName</strong>
+                        <span>@roleLabel@(string.IsNullOrEmpty(userTitle) ? "" : " · " + userTitle)</span>
+                    </div>
+                    <form method="post" action="/Account/Logout">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-ghost btn-sm">Çıkış</button>
+                    </form>
+                </div>
+            </div>
+        </header>
+    }
+    <main class="page @pageClass" @(ngController is null ? null : Html.Raw($"ng-controller=\"{ngController}\""))>
+        @RenderBody()
+    </main>
+    <div class="toasts" o3-toasts></div>
+
+    <script src="~/lib/angular/angular.min.js"></script>
+    <script src="~/lib/angular/angular-locale_tr-tr.js"></script>
+    <script src="~/js/app.js" asp-append-version="true"></script>
+    <script src="~/js/floor-plan.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

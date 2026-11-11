@@ -1,0 +1,70 @@
+@{
+    ViewData["Title"] = "Rezervasyonlarım";
+    ViewData["Page"] = "page-bookings";
+    ViewData["NgController"] = "BookingsCtrl as vm";
+}
+<div class="page-head">
+    <div>
+        <h1>Rezervasyonlarım</h1>
+        <p class="muted">Yaklaşan ve geçmiş masa ve toplantı odası kayıtlarınız.</p>
+    </div>
+    <div class="tabs" role="tablist">
+        <button type="button" role="tab" ng-class="{ active: vm.tab === 'upcoming' }" ng-click="vm.tab = 'upcoming'">Yaklaşan</button>
+        <button type="button" role="tab" ng-class="{ active: vm.tab === 'past' }" ng-click="vm.tab = 'past'">Geçmiş</button>
+    </div>
+</div>
+
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+<div class="loading" ng-if="vm.loading">Yükleniyor…</div>
+
+<div class="two-col" ng-if="vm.data">
+    <section class="card">
+        <h2>Masalar</h2>
+        <p class="muted" ng-if="!vm.desks().length">Kayıt yok.</p>
+        <ul class="booking-list">
+            <li ng-repeat="r in vm.desks()" class="booking">
+                <div class="booking-date">
+                    <strong>{{ r.date | dayShort }}</strong>
+                    <span>{{ r.date | weekday }}</span>
+                </div>
+                <div class="booking-main">
+                    <strong>{{ r.desk.code }}</strong>
+                    <span class="muted">{{ r.desk.floor.name }} · {{ r.desk.zone.name }}</span>
+                    <span class="muted" ng-if="r.note">“{{ r.note }}”</span>
+                </div>
+                <div class="booking-side">
+                    <span class="chip" ng-class="'st-' + r.status">{{ vm.statusLabel(r.status) }}</span>
+                    <a class="btn btn-ghost btn-xs" ng-href="/Plan?date={{ r.date }}&floor={{ r.desk.floorId }}">Planda gör</a>
+                    <button class="btn btn-primary btn-xs" ng-if="vm.canCheckIn(r)" ng-click="vm.checkIn(r)" ng-disabled="vm.busy">Check-in</button>
+                    <button class="btn btn-danger-ghost btn-xs" ng-if="vm.tab === 'upcoming' && r.status === 'BOOKED'" ng-click="vm.cancelDesk(r)" ng-disabled="vm.busy">İptal</button>
+                </div>
+            </li>
+        </ul>
+    </section>
+
+    <section class="card">
+        <h2>Toplantı odaları</h2>
+        <p class="muted" ng-if="!vm.rooms().length">Kayıt yok.</p>
+        <ul class="booking-list">
+            <li ng-repeat="r in vm.rooms()" class="booking">
+                <div class="booking-date">
+                    <strong>{{ r.date | dayShort }}</strong>
+                    <span>{{ r.startMinutes | hm }}–{{ r.endMinutes | hm }}</span>
+                </div>
+                <div class="booking-main">
+                    <strong>{{ r.title }}</strong>
+                    <span class="muted">{{ r.room.name }} · {{ r.room.floor.name }} · {{ r.attendeeCount }} kişi</span>
+                </div>
+                <div class="booking-side">
+                    <span class="chip" ng-class="'st-' + r.status">{{ vm.roomStatusLabel(r.status) }}</span>
+                    <a class="btn btn-ghost btn-xs" ng-href="/Plan?date={{ r.date }}&floor={{ r.room.floorId }}&room={{ r.roomId }}">Planda gör</a>
+                    <button class="btn btn-danger-ghost btn-xs" ng-if="vm.tab === 'upcoming' && r.status === 'BOOKED'" ng-click="vm.cancelRoom(r)" ng-disabled="vm.busy">İptal</button>
+                </div>
+            </li>
+        </ul>
+    </section>
+</div>
+
+@section Scripts {
+    <script src="~/js/bookings.js" asp-append-version="true"></script>
+}

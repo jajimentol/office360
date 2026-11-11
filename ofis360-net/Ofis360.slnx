@@ -5,6 +5,7 @@
     <Project Path="src/Ofis360.Domain/Ofis360.Domain.csproj" />
     <Project Path="src/Ofis360.Infrastructure/Ofis360.Infrastructure.csproj" />
     <Project Path="src/Ofis360.Seed/Ofis360.Seed.csproj" />
+    <Project Path="src/Ofis360.Web/Ofis360.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Ofis360.Application.Tests/Ofis360.Application.Tests.csproj" />

@@ -215,3 +215,21 @@ public sealed class MeController(
         return Ok(new { updated = true, user = Dto.Map(user) });
     }
 }
+
+/// <summary>"Ofiste kim var": secilen gun masa rezervasyonu olan kisiler. Gorunurluk admin ayariyla (presence.managers_only).</summary>
+[Route("api/presence")]
+[RequireRole]
+public sealed class PresenceController(PresenceService presence, IClock clock) : ApiControllerBase
+{
+    [HttpGet]
+    public async Task<IActionResult> Get([FromQuery] string? date, [FromQuery] string? floorId, [FromQuery] string? departmentId, [FromQuery] string? q) =>
+        Ok(await presence.GetAsync(Session, DayKeyOr(date, clock.TodayKey()), Blank(floorId), Blank(departmentId), Blank(q), Ct));
+
+    /// <summary>Menude sayfanin gosterilip gosterilmeyecegi icin.</summary>
+    [HttpGet("access")]
+    public async Task<IActionResult> Access()
+    {
+        var managersOnly = await presence.IsManagersOnlyAsync(Ct);
+        return Ok(new { allowed = PresenceService.CanView(Session, managersOnly), managersOnly });
+    }
+}

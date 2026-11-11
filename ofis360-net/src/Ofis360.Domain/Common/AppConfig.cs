@@ -41,4 +41,6 @@ public static class SettingKeys
     public const string LateCancelMinutes = "report.late_cancel_minutes";
     public const string ReportPersonDetail = "report.person_detail";
     public const string ContactEmail = "office.contact_email";
+    /// <summary>"Ofiste kim var" sayfasi: true ise yalnizca yonetici ve admin gorur, false ise herkes.</summary>
+    public const string PresenceManagersOnly = "presence.managers_only";
 }
