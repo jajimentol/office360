@@ -1,0 +1,112 @@
+<div class="page-head">
+    <div>
+        <h1>Kullanıcı ve roller</h1>
+        <p class="muted">Çalışanları, rollerini, kademelerini ve erişim yetkilerini yönetin.</p>
+    </div>
+    <div class="actions">
+        <button class="btn btn-ghost" ng-click="vm.openImport()">CSV ile içe aktar</button>
+        <button class="btn btn-primary" ng-click="vm.openForm()">Yeni kullanıcı</button>
+    </div>
+</div>
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+
+<div class="kpis" ng-if="vm.stats">
+    <div class="kpi"><strong>{{ vm.stats.total }}</strong><span>toplam · {{ vm.stats.active }} aktif, {{ vm.stats.passive }} pasif</span></div>
+    <div class="kpi"><strong>{{ vm.stats.employees }}</strong><span>çalışan</span></div>
+    <div class="kpi"><strong>{{ vm.stats.managers }}</strong><span>yönetici</span></div>
+    <div class="kpi"><strong>{{ vm.stats.admins }}</strong><span>admin</span></div>
+    <div class="kpi"><strong>{{ vm.stats.secretaries }}</strong><span>sekreter yetkili</span></div>
+    <div class="kpi"><strong>{{ vm.stats.withoutGrade }}</strong><span>kademesi atanmamış</span></div>
+</div>
+
+<section class="card">
+    <form class="filter-bar" ng-submit="vm.search()">
+        <label class="field"><span>Ara</span><input type="search" ng-model="vm.q.search" placeholder="Ad, e-posta veya unvan" /></label>
+        <label class="field"><span>Rol</span>
+            <select ng-model="vm.q.role" ng-change="vm.search()"><option value="">Tümü</option><option value="EMPLOYEE">Çalışan</option><option value="MANAGER">Yönetici</option><option value="ADMIN">Admin</option></select>
+        </label>
+        <label class="field"><span>Departman</span>
+            <select ng-model="vm.q.departmentId" ng-change="vm.search()" ng-options="d.id as d.name for d in vm.departments"><option value="">Tümü</option></select>
+        </label>
+        <label class="field"><span>Kademe</span>
+            <select ng-model="vm.q.grade" ng-change="vm.search()" ng-options="g.key as g.label for g in vm.grades"><option value="">Tümü</option></select>
+        </label>
+        <label class="field"><span>Durum</span>
+            <select ng-model="vm.q.status" ng-change="vm.search()"><option value="">Tümü</option><option value="active">Aktif</option><option value="passive">Pasif</option></select>
+        </label>
+        <button class="btn btn-primary btn-sm" type="submit">Ara</button>
+    </form>
+
+    <div class="table-scroll">
+        <table class="table" ng-if="vm.page.items.length">
+            <thead><tr><th>Kişi</th><th>Rol</th><th>Departman</th><th>Kademe</th><th>Rezervasyon</th><th>Durum</th><th></th></tr></thead>
+            <tbody>
+                <tr ng-repeat="u in vm.page.items">
+                    <td><strong>{{ u.fullName }}</strong><br /><span class="muted small">{{ u.email }} · {{ u.title }}</span></td>
+                    <td>{{ vm.roleLabel(u.role) }} <span class="chip" ng-if="u.isSecretary">Sekreter</span> <span class="chip" ng-if="u.accessibilityApproved">Erişilebilirlik</span></td>
+                    <td>{{ u.department.name }}</td>
+                    <td>{{ u.gradeLabel || '–' }}</td>
+                    <td class="muted">{{ u.deskReservationCount }} masa · {{ u.roomReservationCount }} oda</td>
+                    <td><span class="chip" ng-class="{ 'chip-ok': u.active }">{{ u.active ? 'Aktif' : 'Pasif' }}</span></td>
+                    <td class="right"><button class="btn btn-ghost btn-xs" ng-click="vm.openForm(u)">Düzenle</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <p class="muted empty" ng-if="vm.page && !vm.page.items.length">Kullanıcı bulunamadı.</p>
+    <o3-pager pager="vm.pager" on-change="vm.load()"></o3-pager>
+</section>
+
+<o3-modal open="vm.form" title="{{ vm.form.id ? 'Kullanıcıyı düzenle' : 'Yeni kullanıcı' }}" on-close="vm.form = null">
+    <form ng-submit="vm.save()" novalidate>
+        <div class="grid-2">
+            <label class="field"><span>Ad soyad</span><input type="text" ng-model="vm.form.fullName" required /></label>
+            <label class="field"><span>E-posta</span><input type="text" ng-model="vm.form.email" required /></label>
+            <label class="field"><span>Unvan</span><input type="text" ng-model="vm.form.title" /></label>
+            <label class="field"><span>Departman</span><select ng-model="vm.form.departmentId" ng-options="d.id as d.name for d in vm.departments"></select></label>
+            <label class="field"><span>Rol</span><select ng-model="vm.form.role"><option value="EMPLOYEE">Çalışan</option><option value="MANAGER">Yönetici</option><option value="ADMIN">Admin</option></select></label>
+            <label class="field"><span>Kademe</span><select ng-model="vm.form.grade" ng-options="g.key as g.label for g in vm.grades"><option value="">Atanmamış</option></select></label>
+        </div>
+        <div class="actions">
+            <label class="switch"><input type="checkbox" ng-model="vm.form.isSecretary" /><span>Sekreter yetkisi</span></label>
+            <label class="switch"><input type="checkbox" ng-model="vm.form.accessibilityApproved" /><span>Erişilebilirlik onayı</span></label>
+            <label class="switch"><input type="checkbox" ng-model="vm.form.active" /><span>Aktif</span></label>
+        </div>
+        <div class="alert alert-error" ng-if="vm.formError">{{ vm.formError }}</div>
+        <div class="actions end">
+            <button type="button" class="btn btn-ghost" ng-click="vm.form = null">Vazgeç</button>
+            <button type="submit" class="btn btn-primary" ng-disabled="vm.busy">Kaydet</button>
+        </div>
+    </form>
+</o3-modal>
+
+<o3-modal open="vm.importOpen" title="Personel listesini içe aktar" on-close="vm.importOpen = false" wide="true">
+    <p class="muted">Excel'de <strong>Farklı Kaydet › CSV UTF-8</strong> seçin. Sütunlar: e-posta (zorunlu), ad soyad, unvan, kademe, departman, sekreter. Önce önizleme yapılır; "Uygula" demeden hiçbir şey yazılmaz.</p>
+    <input type="file" accept=".csv,text/csv" o3-file-text="vm.importCsv" />
+    <textarea rows="6" ng-model="vm.importCsv" placeholder="CSV içeriğini yapıştırın veya dosya seçin"></textarea>
+    <div class="actions">
+        <button class="btn btn-ghost" ng-click="vm.runImport(false)" ng-disabled="vm.busy || !vm.importCsv">Önizle</button>
+        <button class="btn btn-primary" ng-click="vm.runImport(true)" ng-disabled="vm.busy || !vm.importResult || vm.importResult.errors > 0 || vm.importResult.applied">Uygula</button>
+    </div>
+    <div class="alert alert-error" ng-if="vm.importError">{{ vm.importError }}</div>
+    <div ng-if="vm.importResult">
+        <p><strong>{{ vm.importResult.applied ? 'Uygulandı' : 'Önizleme' }}:</strong> {{ vm.importResult.total }} satır · {{ vm.importResult.creates }} yeni · {{ vm.importResult.updates }} güncelleme · {{ vm.importResult.unchanged }} değişmeyen · {{ vm.importResult.errors }} hatalı</p>
+        <p class="alert alert-error" ng-if="vm.importResult.fileError">{{ vm.importResult.fileError }}</p>
+        <p class="muted" ng-if="vm.importResult.newDepartments.length">Yeni departmanlar: {{ vm.importResult.newDepartments.join(', ') }}</p>
+        <div class="table-scroll">
+            <table class="table">
+                <thead><tr><th>Satır</th><th>E-posta</th><th>İşlem</th><th>Ayrıntı</th></tr></thead>
+                <tbody>
+                    <tr ng-repeat="r in vm.importResult.rows | limitTo:200">
+                        <td>{{ r.line }}</td><td>{{ r.email }}</td><td>{{ r.action }}</td>
+                        <td><span class="error-text" ng-repeat="e in r.errors">{{ e }} </span><span class="muted">{{ r.changes.join(', ') }}</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</o3-modal>
+
+@section Scripts {
+    <script src="~/js/admin/users.js" asp-append-version="true"></script>
+}

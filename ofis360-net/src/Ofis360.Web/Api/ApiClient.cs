@@ -57,6 +57,27 @@ public sealed class ApiClient(HttpClient http, IHttpContextAccessor accessor)
         return new ApiResult(response.StatusCode, text) { SetCookies = response.Headers.TryGetValues("Set-Cookie", out var cookies) ? cookies.ToList() : [] };
     }
 
+    /// <summary>
+    /// Ham iletim: govde (JSON metni) oldugu gibi gider, cevap bayt olarak doner. Yonetim ekranlarinin genel
+    /// iletim aksiyonlari ve CSV disa aktarimlari icin.
+    /// </summary>
+    public async Task<RawApiResult> SendRawAsync(HttpMethod method, string pathAndQuery, string? jsonBody, CancellationToken ct)
+    {
+        using var request = new HttpRequestMessage(method, pathAndQuery.TrimStart('/'));
+        var token = Token;
+        if (!string.IsNullOrEmpty(token)) request.Headers.Add("Cookie", $"{SessionCookieName}={token}");
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        if (method != HttpMethod.Get && method != HttpMethod.Delete)
+        {
+            request.Content = new StringContent(string.IsNullOrWhiteSpace(jsonBody) ? "{}" : jsonBody, Encoding.UTF8, "application/json");
+        }
+
+        using var response = await http.SendAsync(request, ct);
+        var bytes = await response.Content.ReadAsByteArrayAsync(ct);
+        return new RawApiResult(response.StatusCode, bytes, response.Content.Headers.ContentType?.ToString(),
+            response.Content.Headers.ContentDisposition?.ToString());
+    }
+
     /// <summary>API'nin Set-Cookie basliklarindan oturum biletini cikarir (demo girisi sonrasi).</summary>
     public static string? ExtractSessionToken(IEnumerable<string> setCookies)
     {
@@ -69,3 +90,5 @@ public sealed class ApiClient(HttpClient http, IHttpContextAccessor accessor)
         return null;
     }
 }
+
+public sealed record RawApiResult(HttpStatusCode Status, byte[] Body, string? ContentType, string? ContentDisposition);

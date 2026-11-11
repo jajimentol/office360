@@ -51,6 +51,58 @@ public abstract class WebControllerBase(ApiClient api) : Controller
         return new ContentResult { Content = result.Body, ContentType = "application/json; charset=utf-8", StatusCode = (int)result.Status };
     }
 
+    /// <summary>
+    /// Yonetim ekranlari icin genel iletim: istek yontemi, sorgu dizesi ve JSON govdesi <paramref name="apiPrefix"/> altina
+    /// aynen gider. Yol yalnizca harf, rakam, tire ve egik cizgi icerebilir; ".." ile on ekin disina cikilamaz.
+    /// </summary>
+    protected async Task<IActionResult> ProxyAsync(string apiPrefix, string? path)
+    {
+        path ??= string.Empty;
+        if (path.Split('/').Any(s => s is "." or "..") || !path.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '/' or '_' or '.'))
+        {
+            return NotFound();
+        }
+        string? body = null;
+        if (!HttpMethods.IsGet(Request.Method) && !HttpMethods.IsDelete(Request.Method))
+        {
+            using var reader = new StreamReader(Request.Body);
+            body = await reader.ReadToEndAsync(Ct);
+        }
+        var target = apiPrefix.TrimEnd('/') + (path.Length > 0 ? "/" + path.Trim('/') : "") + Request.QueryString.Value;
+        RawApiResult result;
+        try
+        {
+            result = await Api.SendRawAsync(new HttpMethod(Request.Method), target, body, Ct);
+        }
+        catch (HttpRequestException)
+        {
+            return ApiUnavailable();
+        }
+        if (result.Status == HttpStatusCode.Unauthorized)
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        }
+        if (result.ContentDisposition is not null)
+        {
+            Response.Headers.ContentDisposition = result.ContentDisposition;
+        }
+        if (result.Body.Length == 0) return StatusCode((int)result.Status);
+        if (result.Status == HttpStatusCode.OK)
+        {
+            return new FileContentResult(result.Body, result.ContentType ?? "application/json; charset=utf-8");
+        }
+        return new ContentResult
+        {
+            Content = System.Text.Encoding.UTF8.GetString(result.Body),
+            ContentType = result.ContentType ?? "application/json; charset=utf-8",
+            StatusCode = (int)result.Status,
+        };
+    }
+
+    protected bool IsAdmin => CurrentRole == "ADMIN";
+
+    protected bool IsSecretary => User.FindFirstValue("ofis360:secretary") == "true";
+
     protected IActionResult ApiUnavailable() =>
         StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = new { code = "API_UNAVAILABLE", message = "Sunucuya şu anda ulaşılamıyor. Lütfen biraz sonra yeniden deneyin." } });
 
@@ -66,6 +118,7 @@ public abstract class WebControllerBase(ApiClient api) : Controller
             view.ViewData["UserRole"] = CurrentRole;
             view.ViewData["AppName"] = User.FindFirstValue("ofis360:app_name") ?? "Ofis360";
             view.ViewData["PresenceAllowed"] = await PresenceAllowedAsync();
+            view.ViewData["IsSecretary"] = IsSecretary;
         }
     }
 

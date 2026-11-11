@@ -1,0 +1,71 @@
+<div class="page-head">
+    <div>
+        <h1>{{ vm.isAdmin ? 'Rezervasyon yönetimi' : 'Tüm rezervasyonlar' }}</h1>
+        <p class="muted">Tüm rezervasyonları görüntüleyin ve gerektiğinde gerekçeli olarak iptal edin. İptal edilen rezervasyonun sahibi bildirim alır.</p>
+    </div>
+    <div class="tabs" role="tablist" ng-init="vm.isAdmin = @((ViewData["UserRole"] as string) == "ADMIN" ? "true" : "false")">
+        <button type="button" role="tab" ng-class="{ active: vm.kind === 'desk' }" ng-click="vm.setKind('desk')">Masalar</button>
+        <button type="button" role="tab" ng-class="{ active: vm.kind === 'room' }" ng-click="vm.setKind('room')">Toplantı odaları</button>
+    </div>
+</div>
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+
+<section class="card">
+    <form class="filter-bar" ng-submit="vm.search()">
+        <label class="field"><span>Başlangıç</span><input type="date" ng-model="vm.q.from" /></label>
+        <label class="field"><span>Bitiş</span><input type="date" ng-model="vm.q.to" /></label>
+        <label class="field" ng-if="vm.kind === 'desk'"><span>Kat</span>
+            <select ng-model="vm.q.floorId" ng-options="f.id as f.label for f in vm.floors"><option value="">Tüm katlar</option></select>
+        </label>
+        <label class="field"><span>Durum</span>
+            <select ng-model="vm.q.status" ng-options="s.key as s.label for s in vm.statuses()"><option value="">Tümü</option></select>
+        </label>
+        <label class="field"><span>Ara</span><input type="search" ng-model="vm.q.search" placeholder="Kişi, masa, oda veya başlık" /></label>
+        <button class="btn btn-primary btn-sm" type="submit">Uygula</button>
+    </form>
+
+    <p class="muted empty" ng-if="vm.page && !vm.page.items.length">Filtrelere uyan rezervasyon yok.</p>
+    <div class="table-scroll" ng-if="vm.page.items.length">
+        <table class="table" ng-if="vm.kind === 'desk'">
+            <thead><tr><th>Tarih</th><th>Kişi</th><th>Masa</th><th>Durum</th><th>Kaynak</th><th></th></tr></thead>
+            <tbody>
+                <tr ng-repeat="r in vm.page.items">
+                    <td class="nowrap">{{ r.date | dayShort }} {{ r.date.slice(0, 4) }}<br /><span class="muted small">{{ r.date | weekday }}</span></td>
+                    <td><strong>{{ r.user.fullName }}</strong><br /><span class="muted small">{{ r.user.departmentName }}</span></td>
+                    <td>{{ r.desk.code }}<br /><span class="muted small">{{ r.desk.floor.name }}</span></td>
+                    <td><span class="chip" ng-class="'st-' + r.status">{{ vm.deskStatus[r.status] }}</span><br /><span class="muted small" ng-if="r.cancelReason">{{ r.cancelReason }}</span></td>
+                    <td class="muted small">{{ r.source }}</td>
+                    <td class="right"><button class="btn btn-danger-ghost btn-xs" ng-if="r.date >= vm.today && (r.status === 'BOOKED' || r.status === 'CHECKED_IN')" ng-click="vm.cancel(r)" ng-disabled="vm.busy">Yönetici iptali</button></td>
+                </tr>
+            </tbody>
+        </table>
+        <table class="table" ng-if="vm.kind === 'room'">
+            <thead><tr><th>Tarih ve saat</th><th>Toplantı</th><th>Oda</th><th>Düzenleyen</th><th>Durum</th><th></th></tr></thead>
+            <tbody>
+                <tr ng-repeat="r in vm.page.items">
+                    <td class="nowrap">{{ r.date | dayShort }} {{ r.date.slice(0, 4) }}<br /><span class="muted small">{{ r.startMinutes | hm }}–{{ r.endMinutes | hm }}</span></td>
+                    <td><strong>{{ r.title }}</strong><br /><span class="muted small">{{ r.purpose }} · {{ r.attendeeCount }} kişi</span></td>
+                    <td>{{ r.room.name }}<br /><span class="muted small">{{ r.room.floor.name }}</span></td>
+                    <td>{{ r.user.fullName }}</td>
+                    <td><span class="chip" ng-class="'st-' + r.status">{{ vm.roomStatus[r.status] }}</span><br /><span class="muted small" ng-if="r.cancelReason">{{ r.cancelReason }}</span></td>
+                    <td class="right"><button class="btn btn-danger-ghost btn-xs" ng-if="r.date >= vm.today && r.status === 'BOOKED'" ng-click="vm.cancel(r)" ng-disabled="vm.busy">Yönetici iptali</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <o3-pager pager="vm.pager" on-change="vm.load()"></o3-pager>
+</section>
+
+<o3-modal open="vm.cancelling" title="Rezervasyonu iptal et" on-close="vm.cancelling = null">
+    <p>{{ vm.cancelling.user.fullName }} · {{ vm.cancelling.date | dayLong }}</p>
+    <p class="muted">Rezervasyon sahibine gerekçeyle birlikte bildirim gönderilir.</p>
+    <label class="field"><span>Gerekçe</span><input type="text" ng-model="vm.cancelReason" maxlength="200" placeholder="Örn. Kat bakımda" /></label>
+    <div class="actions end">
+        <button class="btn btn-ghost" ng-click="vm.cancelling = null">Vazgeç</button>
+        <button class="btn btn-primary" ng-click="vm.confirmCancel()" ng-disabled="vm.busy || !vm.cancelReason">İptal et</button>
+    </div>
+</o3-modal>
+
+@section Scripts {
+    <script src="~/js/admin/reservations.js" asp-append-version="true"></script>
+}

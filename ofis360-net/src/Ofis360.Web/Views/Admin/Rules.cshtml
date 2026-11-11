@@ -1,0 +1,114 @@
+<div class="page-head">
+    <div>
+        <h1>Rezervasyon kuralları</h1>
+        <p class="muted">Kurallar API'nin kural motorunda uygulanır; kaydedilen değişiklik tüm yeni rezervasyonlarda hemen geçerli olur.</p>
+    </div>
+</div>
+<div class="alert alert-warn" ng-if="vm.feedConfigured === false">Turnike bağlı değil: otomatik masa bırakma turnike verisi olmadan çalışmaz. Çalışanlar uygulamadan check-in yapabilir.</div>
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+
+<!-- Kademe matrisi -->
+<section class="card" ng-if="vm.matrix">
+    <div class="section-head">
+        <div>
+            <h2>Kademe bazlı kurallar</h2>
+            <p class="muted">Boş hücre varsayılanı kullanır; kademesi atanmamış kişiler de varsayılana tabidir.</p>
+        </div>
+        <label class="field field-inline">
+            <span>Kapsam</span>
+            <select ng-model="vm.matrixBuildingId" ng-change="vm.loadMatrix()" ng-options="b.id as b.name for b in vm.matrix.buildings">
+                <option value="">Tüm binalar</option>
+            </select>
+        </label>
+    </div>
+    <div class="table-scroll">
+        <table class="table matrix">
+            <thead>
+                <tr><th>Kural</th><th>Varsayılan</th><th ng-repeat="g in vm.grades">{{ g.label }}</th></tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="r in vm.matrix.rules">
+                    <th>{{ r.name }}<span class="muted small" ng-if="r.unit"><br />{{ r.unit }}</span></th>
+                    <td class="muted">{{ vm.baseLabel(r) }}</td>
+                    <td ng-repeat="g in vm.grades" ng-class="{ changed: vm.draft[r.key + '|' + g.key] !== vm.original[r.key + '|' + g.key] }">
+                        <select ng-if="r.kind === 'toggle'" ng-model="vm.draft[r.key + '|' + g.key]">
+                            <option value="">–</option><option value="true">Açık</option><option value="false">Kapalı</option>
+                        </select>
+                        <select ng-if="r.kind !== 'toggle' && r.allowedValues" ng-model="vm.draft[r.key + '|' + g.key]">
+                            <option value="">–</option>
+                            <option ng-repeat="v in r.allowedValues" value="{{ v }}">{{ v }}</option>
+                        </select>
+                        <input ng-if="r.kind !== 'toggle' && !r.allowedValues" type="text" inputmode="numeric" class="cell-input" ng-model="vm.draft[r.key + '|' + g.key]" placeholder="{{ r.baseValue }}" />
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="actions end">
+        <span class="muted" ng-if="vm.matrixChanges().length">{{ vm.matrixChanges().length }} değişiklik</span>
+        <button class="btn btn-ghost btn-sm" ng-if="vm.matrixChanges().length" ng-click="vm.resetMatrix()">Geri al</button>
+        <button class="btn btn-primary btn-sm" ng-disabled="!vm.matrixChanges().length" ng-click="vm.confirmMatrix = true">Kaydet</button>
+    </div>
+    <o3-modal open="vm.confirmMatrix" title="Kural değişikliklerini onaylayın" on-close="vm.confirmMatrix = false">
+        <p class="muted">Mevcut rezervasyonlar etkilenmez; yeni rezervasyonlar hemen bu değerlerle kontrol edilir.</p>
+        <table class="table">
+            <thead><tr><th>Kural</th><th>Kademe</th><th>Önce</th><th>Sonra</th></tr></thead>
+            <tbody><tr ng-repeat="c in vm.matrixChanges()"><td>{{ c.rule }}</td><td>{{ c.grade }}</td><td>{{ c.from }}</td><td><strong>{{ c.to }}</strong></td></tr></tbody>
+        </table>
+        <div class="actions end">
+            <button class="btn btn-ghost" ng-click="vm.confirmMatrix = false">Vazgeç</button>
+            <button class="btn btn-primary" ng-click="vm.saveMatrix()" ng-disabled="vm.busy">Onayla ve kaydet</button>
+        </div>
+    </o3-modal>
+</section>
+
+<!-- Resmi tatiller -->
+<section class="card">
+    <h2>Resmi tatiller</h2>
+    <p class="muted">"Yalnızca iş günleri" kuralı açıkken bu günlerde rezervasyon yapılamaz. Dini bayramlar her yıl elle girilmelidir.</p>
+    <form class="inline-form" ng-submit="vm.addHoliday()">
+        <input type="date" ng-model="vm.holiday.date" required />
+        <input type="text" ng-model="vm.holiday.name" placeholder="Tatil adı" maxlength="80" required />
+        <button class="btn btn-primary btn-sm" type="submit" ng-disabled="vm.busy">Ekle</button>
+    </form>
+    <ul class="chips-list">
+        <li ng-repeat="h in vm.holidays">
+            <strong>{{ h.date | dayShort }} {{ h.date.slice(0, 4) }}</strong> {{ h.name }}
+            <button class="btn btn-danger-ghost btn-xs" ng-click="vm.removeHoliday(h)" ng-disabled="vm.busy">Sil</button>
+        </li>
+    </ul>
+</section>
+
+<!-- Varsayilan kurallar -->
+<section class="card" ng-repeat="g in vm.groups">
+    <h2>{{ g.label }} (varsayılan)</h2>
+    <div class="rule" ng-repeat="r in g.rules" ng-class="{ off: !r.draft.enabled }">
+        <div class="rule-text">
+            <strong>{{ r.name }}</strong>
+            <span class="chip" ng-if="r.systemRule">Sistem kuralı</span>
+            <span class="chip" ng-class="{ 'chip-ok': r.draft.enabled }">{{ r.draft.enabled ? 'Aktif' : 'Pasif' }}</span>
+            <p class="muted">{{ r.description }}</p>
+            <span class="muted small" ng-if="r.unit">Birim: {{ r.unit }}</span>
+        </div>
+        <div class="rule-edit">
+            <label class="field" ng-if="r.intValue !== null && r.intValue !== undefined && r.editableLimit">
+                <span>{{ vm.firstLabel(r) }}</span>
+                <input ng-attr-type="{{ vm.isTime(r, 1) ? 'time' : 'number' }}" ng-model="r.draft.int" ng-disabled="!r.draft.enabled" min="{{ r.minValue }}" max="{{ r.maxValue }}" />
+            </label>
+            <label class="field" ng-if="r.secondValue !== null && r.secondValue !== undefined && r.editableLimit">
+                <span>{{ vm.secondLabel(r) }}</span>
+                <input ng-attr-type="{{ vm.isTime(r, 2) ? 'time' : 'number' }}" ng-model="r.draft.second" ng-disabled="!r.draft.enabled" />
+            </label>
+            <label class="switch">
+                <input type="checkbox" ng-model="r.draft.enabled" ng-disabled="r.systemRule" />
+                <span>{{ r.draft.enabled ? 'Açık' : 'Kapalı' }}</span>
+            </label>
+            <button class="btn btn-ghost btn-sm" ng-if="vm.ruleDirty(r)" ng-click="vm.resetRule(r)">Geri al</button>
+            <button class="btn btn-primary btn-sm" ng-disabled="!vm.ruleDirty(r) || vm.busy" ng-click="vm.saveRule(r)">Kaydet</button>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/admin/rules.js" asp-append-version="true"></script>
+}

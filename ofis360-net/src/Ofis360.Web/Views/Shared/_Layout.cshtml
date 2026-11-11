@@ -4,6 +4,8 @@
     var userTitle = ViewData["UserTitle"] as string;
     var role = ViewData["UserRole"] as string;
     var presenceAllowed = ViewData["PresenceAllowed"] as bool? ?? false;
+    var isSecretary = ViewData["IsSecretary"] as bool? ?? false;
+    var action = ViewContext.RouteData.Values["action"] as string;
     var controller = ViewContext.RouteData.Values["controller"] as string;
     var pageClass = ViewData["Page"] as string ?? "";
     var ngController = ViewData["NgController"] as string;
@@ -31,6 +33,18 @@
                     {
                         <a href="/Presence" class="@(controller == "Presence" ? "active" : null)">Ofiste kim var</a>
                     }
+                    @if (role is "MANAGER" or "ADMIN")
+                    {
+                        <a href="/Manager" class="@(controller == "Manager" ? "active" : null)">Analitik</a>
+                    }
+                    @if (role == "ADMIN")
+                    {
+                        <a href="/Admin" class="@(controller == "Admin" ? "active" : null)">Yönetim</a>
+                    }
+                    else if (isSecretary)
+                    {
+                        <a href="/Admin/Reservations" class="@(controller == "Admin" ? "active" : null)">Tüm rezervasyonlar</a>
+                    }
                 </nav>
                 <div class="user">
                     <div class="user-text">
@@ -45,6 +59,23 @@
             </div>
         </header>
     }
+    @if (controller == "Admin" && role == "ADMIN")
+    {
+        var adminLinks = new (string Action, string Label)[]
+        {
+            ("Index", "Pano"), ("Floors", "Katlar"), ("PlanEditor", "Plan düzenleyici"), ("Desks", "Masalar"), ("Rooms", "Odalar"),
+            ("Reservations", "Rezervasyonlar"), ("Users", "Kullanıcılar"), ("Rules", "Kurallar"), ("Closures", "Kapatmalar"),
+            ("Attendance", "Katılım"), ("Audit", "Denetim"), ("Settings", "Ayarlar"),
+        };
+        <nav class="subnav" aria-label="Yönetim menüsü">
+            <div class="subnav-inner">
+                @foreach (var link in adminLinks)
+                {
+                    <a href="/Admin/@(link.Action == "Index" ? "" : link.Action)" class="@(action == link.Action ? "active" : null)">@link.Label</a>
+                }
+            </div>
+        </nav>
+    }
     <main class="page @pageClass" @(ngController is null ? null : Html.Raw($"ng-controller=\"{ngController}\""))>
         @RenderBody()
     </main>
@@ -54,6 +85,10 @@
     <script src="~/lib/angular/angular-locale_tr-tr.js"></script>
     <script src="~/js/app.js" asp-append-version="true"></script>
     <script src="~/js/floor-plan.js" asp-append-version="true"></script>
+    @if (controller is "Admin" or "Manager")
+    {
+        <script src="~/js/admin-common.js" asp-append-version="true"></script>
+    }
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

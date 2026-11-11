@@ -40,7 +40,9 @@
     }
     return {
       get: function (url, params) { return $http.get(url, { params: params }).then(unwrap, fail); },
-      post: function (url, body, params) { return $http.post(url, body || {}, { params: params }).then(unwrap, fail); }
+      post: function (url, body, params) { return $http.post(url, body || {}, { params: params }).then(unwrap, fail); },
+      put: function (url, body, params) { return $http.put(url, body || {}, { params: params }).then(unwrap, fail); },
+      del: function (url, params) { return $http.delete(url, { params: params }).then(unwrap, fail); }
     };
   }]);
 

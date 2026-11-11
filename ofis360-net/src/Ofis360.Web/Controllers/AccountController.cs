@@ -76,6 +76,7 @@ public sealed class AccountController(ApiClient api) : WebControllerBase(api)
                 new("ofis360:title", user.TryGetProperty("title", out var title) ? title.GetString() ?? "" : ""),
                 new("ofis360:department", user.TryGetProperty("departmentName", out var dep) ? dep.GetString() ?? "" : ""),
                 new("ofis360:app_name", me.Json.TryGetProperty("appName", out var appName) ? appName.GetString() ?? "Ofis360" : "Ofis360"),
+                new("ofis360:secretary", user.TryGetProperty("isSecretary", out var sec) && sec.ValueKind == JsonValueKind.True ? "true" : "false"),
                 new(ApiClient.TokenClaim, token),
             };
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,

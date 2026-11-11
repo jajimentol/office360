@@ -1,0 +1,60 @@
+<div class="page-head">
+    <div>
+        <h1>Bakım ve kapatmalar</h1>
+        <p class="muted">Bakım, etkinlik veya özel kullanım nedeniyle masa, toplantı odası ya da kat kapatın.</p>
+    </div>
+    <button class="btn btn-primary" ng-click="vm.openForm()">Yeni kapatma</button>
+</div>
+<div class="alert alert-warn">Kapatma oluşturulduğunda seçilen aralıktaki mevcut rezervasyonlar otomatik iptal edilir ve çalışanlara bildirim gider.</div>
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+
+<section class="card">
+    <div class="section-head">
+        <h2>Kapatma kayıtları <span class="muted small">{{ vm.activeCount() }} aktif</span></h2>
+        <label class="switch"><input type="checkbox" ng-model="vm.onlyActive" /><span>Yalnızca aktifler</span></label>
+    </div>
+    <p class="muted empty" ng-if="vm.closures && !vm.filtered().length">Kapatma kaydı bulunmuyor.</p>
+    <div class="table-scroll" ng-if="vm.filtered().length">
+        <table class="table">
+            <thead><tr><th>Kapsam</th><th>Alan</th><th>Tarih aralığı</th><th>Gerekçe</th><th>Durum</th><th></th></tr></thead>
+            <tbody>
+                <tr ng-repeat="c in vm.filtered()">
+                    <td>{{ c.scopeLabel }}</td>
+                    <td>{{ vm.targetLabel(c) }}</td>
+                    <td>{{ c.startDate | dayShort }} – {{ c.endDate | dayShort }} {{ c.endDate.slice(0, 4) }}</td>
+                    <td><strong>{{ c.reasonLabel }}</strong><br /><span class="muted">{{ c.note }}</span></td>
+                    <td><span class="chip" ng-class="{ 'chip-ok': c.active }">{{ c.active ? 'Aktif' : 'Kaldırıldı' }}</span></td>
+                    <td class="right"><button class="btn btn-danger-ghost btn-xs" ng-if="c.active" ng-click="vm.deactivate(c)" ng-disabled="vm.busy">Kaldır</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<o3-modal open="vm.form" title="Kapatma kaydı oluştur" on-close="vm.form = null">
+    <form ng-submit="vm.save()" novalidate>
+        <div class="grid-2">
+            <label class="field"><span>Kapsam</span>
+                <select ng-model="vm.form.scope" ng-change="vm.form.targetId = vm.targets()[0].id" ng-options="s.key as s.label for s in vm.scopes"></select>
+            </label>
+            <label class="field"><span>Alan</span>
+                <select ng-model="vm.form.targetId" ng-options="t.id as t.label for t in vm.targets()"></select>
+            </label>
+            <label class="field"><span>Başlangıç tarihi</span><input type="date" ng-model="vm.form.start" required /></label>
+            <label class="field"><span>Bitiş tarihi</span><input type="date" ng-model="vm.form.end" required /></label>
+            <label class="field"><span>Gerekçe</span>
+                <select ng-model="vm.form.reason" ng-options="r.key as r.label for r in vm.reasons"></select>
+            </label>
+            <label class="field"><span>Açıklama</span><input type="text" ng-model="vm.form.note" maxlength="200" placeholder="Örn. Monitör değişimi" /></label>
+        </div>
+        <div class="alert alert-error" ng-if="vm.formError">{{ vm.formError }}</div>
+        <div class="actions end">
+            <button type="button" class="btn btn-ghost" ng-click="vm.form = null">Vazgeç</button>
+            <button type="submit" class="btn btn-primary" ng-disabled="vm.busy">Kapat ve rezervasyonları iptal et</button>
+        </div>
+    </form>
+</o3-modal>
+
+@section Scripts {
+    <script src="~/js/admin/closures.js" asp-append-version="true"></script>
+}

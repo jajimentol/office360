@@ -1,0 +1,33 @@
+<div class="page-head">
+    <div>
+        <h1>Denetim kayıtları</h1>
+        <p class="muted">Giriş, rezervasyon, kural, ayar ve alan değişikliklerinin kim tarafından ne zaman yapıldığı.</p>
+    </div>
+</div>
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+
+<section class="card">
+    <div class="chip-filters">
+        <button type="button" class="filter-chip" ng-repeat="f in vm.filters" ng-class="{ active: vm.entity === f.value }" ng-click="vm.setEntity(f.value)">{{ f.label }}</button>
+    </div>
+    <div class="loading" ng-if="vm.loading">Yükleniyor…</div>
+    <p class="muted empty" ng-if="vm.page && !vm.page.items.length">Kayıt bulunamadı.</p>
+    <div class="table-scroll" ng-if="vm.page.items.length">
+        <table class="table">
+            <thead><tr><th>Zaman</th><th>Kişi</th><th>İşlem</th><th>Özet</th></tr></thead>
+            <tbody>
+                <tr ng-repeat="a in vm.page.items">
+                    <td class="nowrap">{{ a.createdAt | dateTime }}</td>
+                    <td><strong>{{ a.actorName }}</strong><br /><span class="muted small">{{ a.actorRole }}</span></td>
+                    <td><span class="chip">{{ a.actionLabel }}</span></td>
+                    <td>{{ a.summary }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <o3-pager pager="vm.pager" on-change="vm.load()"></o3-pager>
+</section>
+
+@section Scripts {
+    <script src="~/js/admin/audit.js" asp-append-version="true"></script>
+}

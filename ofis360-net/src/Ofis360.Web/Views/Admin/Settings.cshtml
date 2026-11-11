@@ -1,0 +1,35 @@
+<div class="page-head">
+    <div>
+        <h1>Sistem ayarları</h1>
+        <p class="muted">Uygulama adı, mesai saatleri, duyuru ve rapor ayarları. Her değişiklik denetim kaydına yazılır.</p>
+    </div>
+</div>
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+<div class="loading" ng-if="vm.loading">Yükleniyor…</div>
+
+<section class="card" ng-repeat="g in vm.groups">
+    <h2>{{ g.label }}</h2>
+    <div class="setting-row" ng-repeat="s in g.items">
+        <div class="setting-text">
+            <strong>{{ s.label }}</strong>
+            <span class="muted">{{ s.description }}</span>
+            <code class="muted">{{ s.key }}</code>
+        </div>
+        <div class="setting-edit">
+            <label class="switch" ng-if="s.type === 'BOOLEAN'">
+                <input type="checkbox" ng-model="s.draft" ng-true-value="'true'" ng-false-value="'false'" />
+                <span>{{ s.draft === 'true' ? 'Açık' : 'Kapalı' }}</span>
+            </label>
+            <input ng-if="s.type === 'NUMBER'" type="number" ng-model="s.draftNumber" ng-change="s.draft = (s.draftNumber === null || s.draftNumber === undefined) ? '' : '' + s.draftNumber" />
+            <input ng-if="s.type === 'TIME'" type="text" ng-model="s.draft" placeholder="SS:DD" maxlength="5" class="w-time" />
+            <textarea ng-if="s.type === 'TEXT' && s.key === 'office.announcement'" ng-model="s.draft" rows="2"></textarea>
+            <input ng-if="s.type === 'TEXT' && s.key !== 'office.announcement'" type="text" ng-model="s.draft" />
+            <button class="btn btn-primary btn-sm" ng-click="vm.save(s)" ng-disabled="vm.busy || s.draft === s.value">Kaydet</button>
+            <span class="muted small">Son: {{ s.updatedAt | dateTime }}</span>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/admin/settings.js" asp-append-version="true"></script>
+}

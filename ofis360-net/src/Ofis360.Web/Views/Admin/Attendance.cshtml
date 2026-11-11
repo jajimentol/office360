@@ -1,0 +1,74 @@
+<div class="page-head">
+    <div>
+        <h1>Katılım raporu</h1>
+        <p class="muted">Gelinmeyen masa rezervasyonları, boş geçen toplantılar ve geç iptaller.</p>
+    </div>
+</div>
+<div class="alert alert-warn" ng-if="vm.feedConfigured === false">Turnike bağlı değil: "gelinmedi" sayıları yalnızca uygulamadan check-in yapılmayan kayıtlardan hesaplanır.</div>
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+
+<section class="card">
+    <form class="filter-bar" ng-submit="vm.load()">
+        <label class="field"><span>Başlangıç</span><input type="date" ng-model="vm.q.from" /></label>
+        <label class="field"><span>Bitiş</span><input type="date" ng-model="vm.q.to" /></label>
+        <label class="field"><span>Departman</span>
+            <select ng-model="vm.q.departmentId" ng-options="d.id as d.name for d in vm.departments"><option value="">Tüm departmanlar</option></select>
+        </label>
+        <button class="btn btn-primary btn-sm" type="submit">Raporu getir</button>
+    </form>
+    <p class="muted small" ng-if="vm.r">Dönem: {{ vm.r.from | dayShort }} {{ vm.r.from.slice(0, 4) }} – {{ vm.r.to | dayShort }} {{ vm.r.to.slice(0, 4) }}</p>
+</section>
+
+<div class="kpis" ng-if="vm.r" style="margin-top:14px">
+    <div class="kpi"><strong>{{ vm.r.totals.deskAttended }}</strong><span>gelinen masa rezervasyonu</span></div>
+    <div class="kpi"><strong>{{ vm.r.totals.deskNoShow }}</strong><span>gelinmeyen masa · {{ vm.r.totals.deskNoShowRate | percent:1 }}</span></div>
+    <div class="kpi"><strong>{{ vm.r.totals.roomHeld }}</strong><span>yapılan toplantı</span></div>
+    <div class="kpi"><strong>{{ vm.r.totals.roomEmpty }}</strong><span>boş toplantı · {{ vm.r.totals.roomEmptyRate | percent:1 }}</span></div>
+    <div class="kpi"><strong>{{ vm.r.totals.lateCancels }}</strong><span>geç iptal (başlangıca {{ vm.r.lateCancelMinutes }} dk'dan az kala)</span></div>
+</div>
+
+<div class="two-col" ng-if="vm.r" style="margin-top:14px">
+    <section class="card">
+        <div class="section-head"><h2>Departmanlar</h2><a class="btn btn-ghost btn-sm" ng-href="{{ vm.exportUrl('departman') }}">CSV indir</a></div>
+        <p class="muted" ng-if="!vm.r.departments.length">Seçilen dönemde veri yok.</p>
+        <div class="table-scroll" ng-if="vm.r.departments.length">
+            <table class="table">
+                <thead><tr><th>Departman</th><th>Gelinen</th><th>Gelinmeyen</th><th>Oran</th><th>Toplantı</th><th>Boş</th><th>Geç iptal</th></tr></thead>
+                <tbody><tr ng-repeat="d in vm.r.departments"><td>{{ d.name }}</td><td>{{ d.deskAttended }}</td><td>{{ d.deskNoShow }}</td><td>{{ d.deskNoShowRate | percent:1 }}</td><td>{{ d.roomHeld }}</td><td>{{ d.roomEmpty }}</td><td>{{ d.lateCancels }}</td></tr></tbody>
+            </table>
+        </div>
+    </section>
+    <section class="card">
+        <div class="section-head"><h2>Toplantı odaları</h2><a class="btn btn-ghost btn-sm" ng-href="{{ vm.exportUrl('oda') }}">CSV indir</a></div>
+        <p class="muted" ng-if="!vm.r.rooms.length">Seçilen dönemde veri yok.</p>
+        <div class="table-scroll" ng-if="vm.r.rooms.length">
+            <table class="table">
+                <thead><tr><th>Oda</th><th>Toplantı</th><th>Boş</th><th>Oran</th><th>Geç iptal</th></tr></thead>
+                <tbody><tr ng-repeat="o in vm.r.rooms"><td>{{ o.name }} <span class="muted small">{{ o.code }}</span></td><td>{{ o.held }}</td><td>{{ o.empty }}</td><td>{{ o.emptyRate | percent:1 }}</td><td>{{ o.lateCancels }}</td></tr></tbody>
+            </table>
+        </div>
+    </section>
+    <section class="card">
+        <div class="section-head"><h2>Haftalar</h2><a class="btn btn-ghost btn-sm" ng-href="{{ vm.exportUrl('hafta') }}">CSV indir</a></div>
+        <p class="muted" ng-if="!vm.r.weeks.length">Seçilen dönemde veri yok.</p>
+        <table class="table" ng-if="vm.r.weeks.length">
+            <thead><tr><th>Hafta başlangıcı</th><th>Gelinmeyen masa</th><th>Boş toplantı</th><th>Geç iptal</th></tr></thead>
+            <tbody><tr ng-repeat="w in vm.r.weeks"><td>{{ w.weekStart | dayShort }} {{ w.weekStart.slice(0, 4) }}</td><td>{{ w.deskNoShow }}</td><td>{{ w.roomEmpty }}</td><td>{{ w.lateCancels }}</td></tr></tbody>
+        </table>
+    </section>
+    <section class="card">
+        <div class="section-head"><h2>Kişiler</h2><a class="btn btn-ghost btn-sm" ng-if="vm.r.people" ng-href="{{ vm.exportUrl('kisi') }}">CSV indir</a></div>
+        <div ng-if="!vm.r.personDetailEnabled" class="alert alert-warn">Kişi bazlı görünüm kapalı. İK ve KVKK onayıyla "Katılım raporunda kişi adları" ayarı açılabilir (Ayarlar).</div>
+        <div ng-if="vm.r.people">
+            <p class="muted small">Kişisel veri içerir; yalnızca yetkili kullanım içindir.</p>
+            <table class="table">
+                <thead><tr><th>Ad soyad</th><th>Departman</th><th>Gelinmeyen masa</th><th>Boş toplantı</th><th>Geç iptal</th></tr></thead>
+                <tbody><tr ng-repeat="p in vm.r.people"><td>{{ p.fullName }}</td><td>{{ p.department }}</td><td>{{ p.deskNoShow }}</td><td>{{ p.roomEmpty }}</td><td>{{ p.lateCancels }}</td></tr></tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script src="~/js/admin/attendance.js" asp-append-version="true"></script>
+}
