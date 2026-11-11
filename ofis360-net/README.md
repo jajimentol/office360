@@ -1,4 +1,4 @@
-# Ofis360 (.NET 10 + Angular 22 + Oracle 23ai)
+# Ofis360 (.NET 10 + ASP.NET Core MVC + AngularJS 1.8.2 + Oracle 23ai)
 
 `C:\Users\USER\ofis360` (Next.js + Prisma/SQLite) uygulamasının birebir taşıması.
 Taşıma planı ve karar kayıtları: [docs/TASIMA-HARITASI.md](docs/TASIMA-HARITASI.md).
@@ -8,7 +8,7 @@ Taşıma planı ve karar kayıtları: [docs/TASIMA-HARITASI.md](docs/TASIMA-HARI
 | Bileşen | Port | Not |
 |---|---|---|
 | API (Kestrel) | 5210 | `src/Ofis360.Api/appsettings.json` → `Ofis360:Port` |
-| Angular dev server | 4210 | `/api` → 5210 proxy (`web/proxy.conf.json`) — eski arayüz, MVC tamamlanınca kaldırılacak |
+| Eski Angular 22 arayüzü | 4210 | `web/` — artık kullanılmıyor, kaldırılacak |
 | MVC + AngularJS (yeni arayüz) | 5220 | `src/Ofis360.Web`; API'yi `Ofis360Web:ApiBaseUrl` üzerinden HTTP ile çağırır |
 | Oracle Free | 1521 | `docker/oracle/compose.yml`, PDB `FREEPDB1` |
 
@@ -18,7 +18,7 @@ Taşıma planı ve karar kayıtları: [docs/TASIMA-HARITASI.md](docs/TASIMA-HARI
 
 - .NET SDK 10.0.403 — kullanıcı profiline kurulu: `%LOCALAPPDATA%\Microsoft\dotnet\dotnet.exe`
   (PATH'e eklenmedi; komutlar aşağıdaki gibi tam yolla ya da PATH'e ekleyerek çalıştırılır).
-- Node 24 / npm 11 (Angular CLI proje bağımlılığı olarak gelir, global kurulum gerekmez).
+- Node/npm gerekmez (yalnızca kaldırılacak eski `web/` için kullanılıyordu).
 - Docker Desktop (Oracle Free konteyneri ≥ 2 GB RAM ister).
 
 ```powershell
@@ -54,8 +54,7 @@ Yeni migration: `dotnet ef migrations add <Ad> --project src/Ofis360.Infrastruct
 
 ```powershell
 dotnet run --project src/Ofis360.Api              # http://localhost:5210/api/health
-cd web; npm start                                 # http://localhost:4210  (ng serve --port 4210)
-# Demo hesapla giriş: /giris → rol seç. 20 ekran kaynakla aynı yollarda (/panel/*, /yonetim, /admin/*).
+dotnet run --project src/Ofis360.Web              # http://localhost:5220  → /Account/Login, demo hesap seç
 ```
 
 ## Yeni arayüz: ASP.NET Core MVC + AngularJS 1.8.2 (`src/Ofis360.Web`)
@@ -66,11 +65,29 @@ dotnet run --project src/Ofis360.Api               # 5210
 dotnet run --project src/Ofis360.Web               # http://localhost:5220  → /Account/Login, demo hesap seç
 ```
 
-- AngularJS yalnızca MVC controller'larını çağırır (`/Plan/*`, `/Bookings/*`, `/Presence/*`, `/Account/*`). MVC, API'yi tipli `HttpClient`
+- AngularJS yalnızca MVC controller'larını çağırır (`/Home`, `/Plan`, `/Rooms`, `/Bookings`, `/Presence`, `/Me`, `/Manager`, `/Admin`, `/Account`). MVC, API'yi tipli `HttpClient`
   (`Api/ApiClient.cs`) ile çağırır; API oturum bileti MVC'nin şifreli kimlik çerezinde durur, tarayıcı API'yi görmez.
 - Antiforgery: MVC `XSRF-TOKEN` çerezini yazar, AngularJS `$http` bunu `X-XSRF-TOKEN` başlığıyla geri yollar.
 - AngularJS 1.8.2 yerel kopya: `wwwroot/lib/angular` (intranet için CDN gerekmez). Derleme adımı yok.
-- Ekranlar: Kat planı (tarih şeridi + kroki + masa/oda rezervasyonu), Rezervasyonlarım, Ofiste kim var.
+- Yönetim ekranları `/Admin/Api/{yol}` → `/api/admin/{yol}`, analitik `/Manager/Api/{yol}` → `/api/analytics/{yol}` genel iletimiyle çalışır
+  (`WebControllerBase.ProxyAsync`); CSV dışa aktarımlar da buradan iner. Yetki hem MVC'de (rol) hem API'de denetlenir.
+- Chart.js 4.6.1 yerel kopya: `wwwroot/lib/chartjs` (analitik ve kullanım özetim).
+- Ekranlar ve eski yollar:
+
+  | Eski (Angular) | Yeni (MVC) |
+  |---|---|
+  | `/giris` | `/Account/Login` |
+  | `/panel` | `/Home` (giriş sonrası açılış) |
+  | `/panel/masa` | `/Plan` (tarih şeridi, özellik filtreleri, plan/liste, kimin adına, masa ve oda rezervasyonu) |
+  | `/panel/toplanti` | `/Rooms` (takvim/liste, saat-kapasite-kat-donanım filtreleri, öneriler, kimin adına) |
+  | `/panel/rezervasyonlarim` | `/Bookings` |
+  | `/panel/kullanimim`, `/panel/bildirimler`, `/panel/profil` | `/Me/Usage`, `/Me/Notifications`, `/Me/Profile` |
+  | `/panel/tum-rezervasyonlar`, `/admin/rezervasyonlar` | `/Admin/Reservations` (admin + Sekreter) |
+  | `/yonetim` | `/Manager` (Chart.js, ısı haritası) |
+  | `/admin`, `/admin/katlar`, `masalar`, `odalar`, `kullanicilar`, `kurallar`, `katilim`, `kapatmalar`, `audit`, `ayarlar` | `/Admin`, `/Admin/Floors`, `Desks`, `Rooms`, `Users`, `Rules`, `Attendance`, `Closures`, `Audit`, `Settings` |
+  | plan editörü (`/admin/katlar` içinde) | `/Admin/PlanEditor` |
+  | — | `/Presence` "Ofiste kim var" (yeni) |
+
 - Renkler: dolu masa ve tamamen dolu oda `#FF0025`, kendi masanız `#0135EB`, kısmen dolu oda `#6B8BF5`.
   Oda, mesai saatlerindeki tüm dilimler doluysa "tamamen dolu" sayılır (`RoomDayStates`, `AvailabilityService`).
 - "Ofiste kim var": seçilen gün aktif masa rezervasyonu olanlar (oda kayıtları sayılmaz), check-in durumu, geçmiş günler açık.
@@ -131,7 +148,8 @@ src/Ofis360.Api              controllers, hata zarfı middleware, Program.cs
 src/Ofis360.Seed             demo verisi CLI
 tests/Ofis360.Domain.Tests   xUnit birim
 tests/Ofis360.Application.Tests  xUnit + Oracle (Testcontainers / yerel)
-web/                         Angular 22 (standalone, sinyaller, Tailwind v4, Chart.js) — bkz. docs §18
+src/Ofis360.Web              ASP.NET Core MVC + Razor + AngularJS 1.8.2 (yeni arayüz, API'yi HTTP ile çağırır)
+web/                         eski Angular 22 arayüzü — kullanılmıyor, kaldırılacak
 docker/oracle/               compose + init
 ```
 
