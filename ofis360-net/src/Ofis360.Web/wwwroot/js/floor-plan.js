@@ -126,7 +126,7 @@
   angular.module('ofis360').directive('o3FloorPlan', function () {
     return {
       restrict: 'E',
-      scope: { plan: '<', selectedDeskId: '<', selectedRoomId: '<', highlighted: '<?', onDesk: '&', onRoom: '&' },
+      scope: { plan: '<', selectedDeskId: '<', selectedRoomId: '<', highlighted: '<?', deskFill: '<?', onDesk: '&', onRoom: '&' },
       template:
         '<svg ng-if="plan" class="floor-svg" ng-attr-view_box="0 0 {{ plan.floor.planWidth }} {{ plan.floor.planHeight }}" role="group" aria-label="Kat planı">' +
         '<defs>' +
@@ -182,7 +182,7 @@
             if (kind === 'desk') scope.onDesk({ id: id }); else scope.onRoom({ id: id });
           }
         };
-        scope.$watchGroup(['plan', 'selectedDeskId', 'selectedRoomId', 'highlighted'], function () {
+        scope.$watchGroup(['plan', 'selectedDeskId', 'selectedRoomId', 'highlighted', 'deskFill'], function () {
           var plan = scope.plan;
           if (!plan) { scope.elements = scope.zones = scope.desks = scope.rooms = []; return; }
           var hasSketch = plan.elements && plan.elements.some(function (e) { return e.visible; });
@@ -193,6 +193,12 @@
           scope.rooms = plan.rooms.map(function (r) { return renderRoom(r, scope.selectedRoomId); });
           scope.desks = plan.desks.map(function (d) {
             var r = renderDesk(d, scope.selectedDeskId);
+            if (scope.deskFill) {
+              // Isi haritasi: durum renkleri yerine kullanim yogunlugu.
+              var fill = scope.deskFill[d.id];
+              r.style = { fill: fill ? fill.color : '#f1f5f9', stroke: '#64748b', text: fill && fill.dark ? '#ffffff' : '#0f172a', label: fill ? fill.label : 'Kullanım yok', status: null };
+              r.aria = d.code + ' masası, ' + r.style.label;
+            }
             r.dimmed = !!scope.highlighted && !scope.highlighted[d.id];
             return r;
           });

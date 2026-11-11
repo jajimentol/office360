@@ -331,3 +331,6 @@ textarea { font: inherit; border: 1px solid var(--line); border-radius: 9px; pad
 .activity li:last-child { border-bottom: 0; }
 .rule-summary { margin: 0; padding-left: 18px; line-height: 1.9; }
 .error-text { color: var(--error); font-size: 12px; }
+.heat-legend { display: flex; align-items: center; gap: 3px; font-size: 12px; color: var(--ink-500); margin-bottom: 8px; }
+.heat-legend i { width: 22px; height: 12px; border-radius: 3px; display: inline-block; border: 1px solid #cbd5e1; }
+.heat-legend span { margin: 0 4px; }

@@ -1,0 +1,91 @@
+<div class="page-head">
+    <div>
+        <h1>Ofis analitiği</h1>
+        <p class="muted">Kat ve gün bazında doluluk, ortak alan kullanımı ve adil kullanım göstergeleri. Tüm raporlar toplulaştırılmış ve anonimdir.</p>
+    </div>
+</div>
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+
+<section class="card">
+    <form class="filter-bar" ng-submit="vm.load()">
+        <label class="field"><span>Başlangıç</span><input type="date" ng-model="vm.q.from" /></label>
+        <label class="field"><span>Bitiş</span><input type="date" ng-model="vm.q.to" /></label>
+        <label class="field"><span>Kat</span><select ng-model="vm.q.floor" ng-options="f.id as f.name for f in vm.ctx.floors"><option value="">Tüm katlar</option></select></label>
+        <label class="field"><span>Departman</span><select ng-model="vm.q.department" ng-options="d.id as d.name for d in vm.ctx.departments"><option value="">Tüm departmanlar</option></select></label>
+        <label class="field"><span>Kaynak</span><select ng-model="vm.q.resource"><option value="ALL">Masa + oda</option><option value="DESK">Masa</option><option value="ROOM">Toplantı odası</option></select></label>
+        <button class="btn btn-primary btn-sm" type="submit">Uygula</button>
+    </form>
+    <div class="actions" ng-if="vm.a">
+        <span class="muted small">{{ vm.a.filters.fromDayKey | dayShort }} {{ vm.a.filters.fromDayKey.slice(0, 4) }} – {{ vm.a.filters.toDayKey | dayShort }} {{ vm.a.filters.toDayKey.slice(0, 4) }} · {{ vm.a.filters.workdayCount }} iş günü</span>
+        <span class="label" style="margin-left:auto">CSV</span>
+        <a class="btn btn-ghost btn-xs" ng-repeat="t in vm.exports" ng-href="{{ vm.exportUrl(t.key) }}">{{ t.label }}</a>
+    </div>
+</section>
+
+<div class="kpis" ng-if="vm.a" style="margin-top:14px">
+    <div class="kpi"><strong>{{ vm.a.kpis.inOfficeToday }}</strong><span>bugün ofiste · {{ vm.a.kpis.todayOccupancyRate | percent }} doluluk</span></div>
+    <div class="kpi"><strong>{{ vm.a.kpis.availableDesksToday }}</strong><span>bugün boş masa / {{ vm.a.kpis.totalUsableDesks }}</span></div>
+    <div class="kpi"><strong>{{ vm.a.kpis.weeklyAverageOccupancy | percent }}</strong><span>son 7 gün ortalama doluluk</span></div>
+    <div class="kpi"><strong>{{ vm.a.kpis.noShowRate | percent:1 }}</strong><span>gelmeme oranı · {{ vm.a.kpis.noShowLostSeats }} boşa giden masa</span></div>
+    <div class="kpi"><strong>{{ vm.a.kpis.roomUsageRate | percent }}</strong><span>toplantı odası kullanımı</span></div>
+    <div class="kpi"><strong>{{ vm.a.kpis.cancellationRate | percent:1 }}</strong><span>iptal oranı</span></div>
+    <div class="kpi"><strong>{{ vm.a.kpis.totalDeskReservations }}</strong><span>masa · {{ vm.a.kpis.totalRoomReservations }} oda rezervasyonu</span></div>
+    <div class="kpi"><strong>{{ vm.a.kpis.activeEmployees }}</strong><span>aktif çalışan / {{ vm.a.kpis.totalEmployees }}</span></div>
+    <div class="kpi"><strong>{{ vm.a.kpis.unmetRequests }}</strong><span>karşılanamayan talep · {{ vm.a.kpis.unmetRequestDays }} gün</span></div>
+</div>
+<div class="alert alert-warn" ng-if="vm.a.kpis.peakDay" style="margin-top:14px">
+    En yoğun gün: <strong>{{ vm.a.kpis.peakDay.label }} {{ vm.a.kpis.peakDay.weekday }}</strong>, doluluk {{ vm.a.kpis.peakDay.occupancyRate | percent }}.
+</div>
+
+<div class="chart-grid" ng-show="vm.a">
+    <section class="card"><h2>Günlere göre doluluk trendi</h2><p class="muted small">Masa doluluk oranının seçili aralıktaki seyri</p><div class="chart-box"><canvas o3-chart="vm.charts.trend"></canvas></div></section>
+    <section class="card"><h2>Kat bazında doluluk</h2><p class="muted small">Seçili aralıktaki ortalama doluluk</p><div class="chart-box"><canvas o3-chart="vm.charts.floors"></canvas></div></section>
+    <section class="card"><h2>Saatlere göre yoğunluk</h2><p class="muted small">Toplantı odası kullanımı ve ofise giriş saatleri</p><div class="chart-box"><canvas o3-chart="vm.charts.hourly"></canvas></div></section>
+    <section class="card"><h2>Departman bazında ofise geliş oranı</h2><p class="muted small">Çalışan ve iş günü sayısına göre normalize</p><div class="chart-box"><canvas o3-chart="vm.charts.departments"></canvas></div></section>
+    <section class="card"><h2>Rezervasyon ve gerçekleşen kullanım</h2><p class="muted small">Oluşturulan rezervasyonlara karşılık ofise gelenler</p><div class="chart-box"><canvas o3-chart="vm.charts.bookedUsed"></canvas></div></section>
+    <section class="card"><h2>Toplantı odası kullanım oranları</h2><p class="muted small">Mesai saatlerine oranla dolu geçen süre</p><div class="chart-box"><canvas o3-chart="vm.charts.rooms"></canvas></div></section>
+    <section class="card"><h2>Rezervasyon sayısına göre çalışan dağılımı</h2><p class="muted small">Anonim kovalar</p><div class="chart-box"><canvas o3-chart="vm.charts.distribution"></canvas></div></section>
+    <section class="card"><h2>Popüler masa kullanım payı dağılımı</h2><p class="muted small">Rezervasyonların yüzde kaçı popüler masalarda?</p><div class="chart-box"><canvas o3-chart="vm.charts.popular"></canvas></div></section>
+</div>
+
+<div class="two-col" ng-if="vm.a" style="margin-top:14px">
+    <section class="card">
+        <h2>Adil kullanım göstergesi</h2>
+        <p class="muted small">Kişi bazlı değil, dağılım bazlı ölçüm.</p>
+        <ul class="rule-summary">
+            <li>Gini endeksi: <strong>{{ vm.a.fairness.giniIndex | number:2 }}</strong> <span class="muted small">(0 = herkes eşit, 1 = tek kişide toplanmış)</span></li>
+            <li>En çok kullanılan %10 masanın payı: <strong>{{ vm.a.fairness.topDeskShare | percent }}</strong></li>
+            <li>Çalışan başına ortalama rezervasyon: <strong>{{ vm.a.fairness.averageReservationsPerEmployee | number:1 }}</strong></li>
+        </ul>
+    </section>
+    <section class="card">
+        <h2>Kat baskısı</h2>
+        <table class="table">
+            <thead><tr><th>Kat</th><th>Kapasite</th><th>Ortalama</th><th>Zirve</th><th>Dolu gün</th></tr></thead>
+            <tbody><tr ng-repeat="f in vm.a.floorPressure"><td>{{ f.name }}</td><td>{{ f.capacity }}</td><td>{{ f.averageOccupancy | percent }}</td><td>{{ f.peakOccupancy | percent }}</td><td>{{ f.saturatedDays }}</td></tr></tbody>
+        </table>
+    </section>
+    <section class="card">
+        <h2>En çok kullanılan masalar</h2>
+        <table class="table"><tbody><tr ng-repeat="d in vm.a.deskHeatmap | limitTo:6"><td><strong>{{ d.code }}</strong> <span class="chip" ng-if="d.popular">Popüler</span><br /><span class="muted small">{{ d.zoneName }}</span></td><td>{{ d.reservations }} rezervasyon</td><td>{{ d.usageRate | percent }}</td></tr></tbody></table>
+    </section>
+    <section class="card">
+        <h2>En az kullanılan masalar</h2>
+        <p class="muted small">Kapasite planlaması için değerlendirilebilir.</p>
+        <table class="table"><tbody><tr ng-repeat="d in vm.leastUsed"><td><strong>{{ d.code }}</strong><br /><span class="muted small">{{ d.zoneName }}</span></td><td>{{ d.reservations }} rezervasyon</td><td>{{ d.usageRate | percent }}</td></tr></tbody></table>
+    </section>
+</div>
+
+<section class="card" ng-if="vm.a && vm.ctx.planFloors.length" style="margin-top:14px">
+    <div class="section-head">
+        <div><h2>Masa kullanım ısı haritası</h2><p class="muted small">Seçili aralıkta masa başına rezervasyon sayısı. Koyu renk daha yoğun kullanım.</p></div>
+        <label class="field field-inline"><span>Kat</span><select ng-model="vm.heatFloorId" ng-change="vm.buildHeatmap()" ng-options="f.id as f.name for f in vm.ctx.planFloors"></select></label>
+    </div>
+    <div class="heat-legend"><span>Az</span><i ng-repeat="c in vm.heatColors" ng-style="{ background: c }"></i><span>Çok</span></div>
+    <o3-floor-plan plan="vm.heatPlan" desk-fill="vm.heatFill" on-desk="0" on-room="0"></o3-floor-plan>
+</section>
+
+@section Scripts {
+    <script src="~/lib/chartjs/chart.umd.min.js"></script>
+    <script src="~/js/analytics.js" asp-append-version="true"></script>
+}
