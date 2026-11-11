@@ -1,0 +1,94 @@
+{
+  "base": "http://localhost:5211/api",
+  "ranAt": "2026-11-08T00:33:21.149Z",
+  "rows": [
+    {
+      "id": "INT-01",
+      "area": "Veri bütünlüğü",
+      "role": "-",
+      "type": "Veri bütünlüğü/DB",
+      "scenario": "Aynı masa/gün için birden fazla aktif rezervasyon (yük testleri sonrası)",
+      "expected": "0",
+      "actual": "2",
+      "status": "Kaldı",
+      "evidence": "SELECT COUNT(*) FROM (SELECT DESK_ID, RESERVATION_DATE FROM OFIS360_PERF.DESK_RESERVATION WHERE STATUS IN ('BOOKED','CHECKED_IN') GROUP BY DESK_ID, RESERVATION_DATE HAVING COUNT(*) > 1);"
+    },
+    {
+      "id": "INT-02",
+      "area": "Veri bütünlüğü",
+      "role": "-",
+      "type": "Veri bütünlüğü/DB",
+      "scenario": "Aynı kullanıcı/gün için birden fazla aktif masa (yük testleri sonrası)",
+      "expected": "0",
+      "actual": "0",
+      "status": "Geçti",
+      "evidence": "SELECT COUNT(*) FROM (SELECT USER_ID, RESERVATION_DATE FROM OFIS360_PERF.DESK_RESERVATION WHERE STATUS IN ('BOOKED','CHECKED_IN') GROUP BY USER_ID, RESERVATION_DATE HAVING COUNT(*) > 1);"
+    },
+    {
+      "id": "INT-03",
+      "area": "Veri bütünlüğü",
+      "role": "-",
+      "type": "Veri bütünlüğü/DB",
+      "scenario": "Çakışan aktif oda rezervasyonu (yük testleri sonrası)",
+      "expected": "0",
+      "actual": "0",
+      "status": "Geçti",
+      "evidence": "SELECT COUNT(*) FROM OFIS360_PERF.ROOM_RESERVATION a JOIN OFIS360_PERF.ROOM_RESERVATION b ON a.ROOM_ID = b.ROOM_ID AND a.RESERVATION_DATE = b.RESERVATION_DATE AND a.ID < b.ID AND a.START_MINUTES < b.END_MINUTES AND b.STA"
+    },
+    {
+      "id": "INT-04",
+      "area": "Veri bütünlüğü",
+      "role": "-",
+      "type": "Veri bütünlüğü/DB",
+      "scenario": "Haftalık 3 gün limitini aşan kullanıcı-hafta (gelecek, uygulama üzerinden oluşturulan) (yük testleri sonrası)",
+      "expected": "0",
+      "actual": "0",
+      "status": "Geçti",
+      "evidence": "SELECT COUNT(*) FROM (SELECT USER_ID, TRUNC(RESERVATION_DATE, 'IW') FROM OFIS360_PERF.DESK_RESERVATION WHERE STATUS IN ('BOOKED','CHECKED_IN') AND RESERVATION_DATE > TRUNC(SYSDATE) AND SOURCE = 'EMPLOYEE' GROUP BY USER_I"
+    },
+    {
+      "id": "INT-05",
+      "area": "Veri bütünlüğü",
+      "role": "-",
+      "type": "Veri bütünlüğü/DB",
+      "scenario": "Aktif durumda olup aktif anahtarı boş masa rezervasyonu (benzersiz index korumasız) (yük testleri sonrası)",
+      "expected": "0",
+      "actual": "10",
+      "status": "Kaldı",
+      "evidence": "SELECT COUNT(*) FROM OFIS360_PERF.DESK_RESERVATION WHERE STATUS IN ('BOOKED','CHECKED_IN') AND (ACTIVE_DESK_KEY IS NULL OR ACTIVE_USER_DAY_KEY IS NULL);"
+    },
+    {
+      "id": "INT-06",
+      "area": "Veri bütünlüğü",
+      "role": "-",
+      "type": "Veri bütünlüğü/DB",
+      "scenario": "Durum geçmişinde karşılığı olmayan rezervasyon (trigger sonrası oluşturulan) (yük testleri sonrası)",
+      "expected": "0",
+      "actual": "0",
+      "status": "Geçti",
+      "evidence": "SELECT COUNT(*) FROM OFIS360_PERF.DESK_RESERVATION r WHERE r.CREATED_AT > SYSTIMESTAMP - INTERVAL '1' DAY AND NOT EXISTS (SELECT 1 FROM OFIS360_PERF.RESERVATION_STATUS_HISTORY h WHERE h.RESERVATION_TYPE='DESK' AND h.RESE"
+    },
+    {
+      "id": "INT-07",
+      "area": "Veri bütünlüğü",
+      "role": "-",
+      "type": "Veri bütünlüğü/DB",
+      "scenario": "Son durumu geçmişin son satırıyla uyuşmayan rezervasyon (yük testleri sonrası)",
+      "expected": "0",
+      "actual": "0",
+      "status": "Geçti",
+      "evidence": "SELECT COUNT(*) FROM OFIS360_PERF.DESK_RESERVATION r WHERE r.CREATED_AT > SYSTIMESTAMP - INTERVAL '1' DAY AND r.STATUS <> (SELECT MAX(h.NEW_STATUS) KEEP (DENSE_RANK LAST ORDER BY h.ID) FROM OFIS360_PERF.RESERVATION_STATU"
+    },
+    {
+      "id": "INT-08",
+      "area": "Veri bütünlüğü",
+      "role": "-",
+      "type": "Veri bütünlüğü/DB",
+      "scenario": "İptal edilmiş ama iptal zamanı boş rezervasyon (yük testleri sonrası)",
+      "expected": "0",
+      "actual": "0",
+      "status": "Geçti",
+      "evidence": "SELECT COUNT(*) FROM OFIS360_PERF.DESK_RESERVATION WHERE STATUS = 'CANCELLED' AND CANCELLED_AT IS NULL AND CREATED_AT > SYSTIMESTAMP - INTERVAL '1' DAY;"
+    }
+  ]
+}

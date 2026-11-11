@@ -1,0 +1,20 @@
+S6-soak: VU=100 süre=930s istek=35862 rps=38.6 hata=0 (%0) p50=18 p95=30 p99=47 max=888 ms
+iş: {"deskOk":75,"deskRejected":0,"roomOk":21,"roomRejected":0,"cancelOk":63}  üretici CPU=27.6s
+  GET /panel/home                        n=  8634 p50=   27 p95=   32 p99=   39 err=0 4xx=0
+  GET /me/notifications/unread-count     n=  8349 p50=    5 p95=   16 p99=   19 err=0 4xx=0
+  GET /floors/summaries                  n=  5895 p50=   19 p95=   23 p99=   31 err=0 4xx=0
+  GET /floors/{id}/plan                  n=  5895 p50=   22 p95=   29 p99=   37 err=0 4xx=0
+  GET /me/reservations                   n=  3355 p50=   20 p95=   25 p99=   33 err=0 4xx=0
+  GET /rooms/availability                n=  1688 p50=   17 p95=   26 p99=   35 err=0 4xx=0
+  GET /me/usage                          n=   844 p50=   16 p95=   26 p99=   37 err=0 4xx=0
+  GET /analytics (30g)                   n=   285 p50=   54 p95=  109 p99=  373 err=0 4xx=0
+  GET /admin/desk-reservations           n=   154 p50=   23 p95=   40 p99=  106 err=0 4xx=0
+  GET /admin/users                       n=   154 p50=   21 p95=   28 p99=   39 err=0 4xx=0
+  GET /admin/audit                       n=   154 p50=   38 p95=   48 p99=   55 err=0 4xx=0
+  GET /admin/floors                      n=   154 p50=   19 p95=   23 p99=   31 err=0 4xx=0
+  POST /auth/login                       n=   100 p50=   22 p95=  111 p99=  210 err=0 4xx=0
+  POST /desk-reservations                n=    75 p50=   32 p95=   84 p99=  110 err=0 4xx=0
+  POST /desk-reservations/{id}/cancel    n=    63 p50=   21 p95=   73 p99=  132 err=0 4xx=0
+  GET /analytics/export                  n=    42 p50=   65 p95=  131 p99=  370 err=0 4xx=0
+  POST /room-reservations                n=    21 p50=   32 p95=   64 p99=   87 err=0 4xx=0
+S6-soak: örnek=186 API CPU maks=%2.5 (12 mantıksal çekirdeğe göre) WS maks=878MB iş parçacığı maks=41 tutamaç maks=906 DB oturum maks=100 aktif maks=2 bloklu maks=0 boş RAM min=1665MB

@@ -1,0 +1,99 @@
+{
+  "button-name": {
+    "impact": "critical",
+    "help": "Buttons must have discernible text",
+    "pages": [
+      "/panel@mobil",
+      "/panel/masa@mobil",
+      "/panel/toplanti@mobil",
+      "/panel/rezervasyonlarim@mobil",
+      "/panel/kullanimim@mobil",
+      "/panel/bildirimler@mobil",
+      "/panel/profil@mobil",
+      "/yonetim@mobil",
+      "/admin@mobil",
+      "/admin/katlar@mobil",
+      "/admin/masalar@mobil",
+      "/admin/odalar@mobil",
+      "/admin/rezervasyonlar@mobil",
+      "/admin/kullanicilar@mobil",
+      "/admin/kurallar@mobil",
+      "/admin/kapatmalar@mobil",
+      "/admin/audit@mobil",
+      "/admin/ayarlar@mobil"
+    ]
+  },
+  "color-contrast": {
+    "impact": "serious",
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "pages": [
+      "/panel@mobil",
+      "/panel/masa@mobil",
+      "/panel/toplanti@mobil",
+      "/panel/rezervasyonlarim@mobil",
+      "/panel/kullanimim@mobil",
+      "/panel/bildirimler@mobil",
+      "/panel/profil@mobil",
+      "/yonetim@mobil",
+      "/admin@mobil",
+      "/admin/katlar@mobil",
+      "/admin/masalar@mobil",
+      "/admin/odalar@mobil",
+      "/admin/rezervasyonlar@mobil",
+      "/admin/kullanicilar@mobil",
+      "/admin/kurallar@mobil",
+      "/admin/kapatmalar@mobil",
+      "/admin/audit@mobil",
+      "/admin/ayarlar@mobil",
+      "/panel@masaustu",
+      "/panel/masa@masaustu",
+      "/panel/toplanti@masaustu",
+      "/panel/rezervasyonlarim@masaustu",
+      "/panel/kullanimim@masaustu",
+      "/panel/bildirimler@masaustu",
+      "/panel/profil@masaustu",
+      "/yonetim@masaustu",
+      "/admin@masaustu",
+      "/admin/katlar@masaustu",
+      "/admin/masalar@masaustu",
+      "/admin/odalar@masaustu",
+      "/admin/rezervasyonlar@masaustu",
+      "/admin/kullanicilar@masaustu",
+      "/admin/kurallar@masaustu",
+      "/admin/kapatmalar@masaustu",
+      "/admin/audit@masaustu",
+      "/admin/ayarlar@masaustu"
+    ]
+  },
+  "aria-prohibited-attr": {
+    "impact": "serious",
+    "help": "Elements must only use permitted ARIA attributes",
+    "pages": [
+      "/panel/masa@mobil",
+      "/yonetim@mobil",
+      "/admin/katlar@mobil",
+      "/panel/masa@masaustu",
+      "/yonetim@masaustu",
+      "/admin/katlar@masaustu"
+    ]
+  },
+  "scrollable-region-focusable": {
+    "impact": "serious",
+    "help": "Scrollable region must have keyboard access",
+    "pages": [
+      "/panel/rezervasyonlarim@mobil",
+      "/yonetim@mobil",
+      "/admin/katlar@mobil",
+      "/admin/audit@mobil",
+      "/admin/katlar@masaustu"
+    ]
+  },
+  "aria-progressbar-name": {
+    "impact": "serious",
+    "help": "ARIA progressbar nodes must have an accessible name",
+    "pages": [
+      "/yonetim@mobil",
+      "/yonetim@masaustu"
+    ]
+  }
+}

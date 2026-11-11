@@ -1,0 +1,11 @@
+  Geri yüklenecek projeler belirleniyor...
+  Geri yükleme için tüm projeler güncel.
+Şu kaynaklar kullanıldı:
+   https://api.nuget.org/v3/index.json
+Belirtilen `Ofis360.Api` projesinin geçerli kaynaklarda güvenlik açığı olan paketi yok.
+Belirtilen `Ofis360.Application` projesinin geçerli kaynaklarda güvenlik açığı olan paketi yok.
+Belirtilen `Ofis360.Domain` projesinin geçerli kaynaklarda güvenlik açığı olan paketi yok.
+Belirtilen `Ofis360.Infrastructure` projesinin geçerli kaynaklarda güvenlik açığı olan paketi yok.
+Belirtilen `Ofis360.Seed` projesinin geçerli kaynaklarda güvenlik açığı olan paketi yok.
+Belirtilen `Ofis360.Application.Tests` projesinin geçerli kaynaklarda güvenlik açığı olan paketi yok.
+Belirtilen `Ofis360.Domain.Tests` projesinin geçerli kaynaklarda güvenlik açığı olan paketi yok.

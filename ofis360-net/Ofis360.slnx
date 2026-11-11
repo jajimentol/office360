@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Ofis360.Api/Ofis360.Api.csproj" />
+    <Project Path="src/Ofis360.Application/Ofis360.Application.csproj" />
+    <Project Path="src/Ofis360.Domain/Ofis360.Domain.csproj" />
+    <Project Path="src/Ofis360.Infrastructure/Ofis360.Infrastructure.csproj" />
+    <Project Path="src/Ofis360.Seed/Ofis360.Seed.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Ofis360.Application.Tests/Ofis360.Application.Tests.csproj" />
+    <Project Path="tests/Ofis360.Domain.Tests/Ofis360.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

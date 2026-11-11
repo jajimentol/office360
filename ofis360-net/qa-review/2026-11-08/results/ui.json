@@ -1,0 +1,204 @@
+{
+  "app": "http://localhost:4211",
+  "browser": "chromium (Playwright 1.49.1)",
+  "ranAt": "2026-11-08T00:18:55.377Z",
+  "rows": [
+    {
+      "id": "UI-A11Y-01",
+      "area": "Giriş",
+      "role": "Anonim",
+      "type": "Erişilebilirlik",
+      "scenario": "Giriş ekranı axe-core 4.13 WCAG 2.1 A/AA taraması",
+      "expected": "0 ihlal",
+      "actual": "color-contrast(serious,6)",
+      "status": "Kaldı",
+      "evidence": ""
+    },
+    {
+      "id": "UI-KBD-01",
+      "area": "Giriş",
+      "role": "Anonim",
+      "type": "Erişilebilirlik",
+      "scenario": "Klavye ile odak sırası (10 × Tab)",
+      "expected": "Mantıklı sıra, odak görünür",
+      "actual": "a:Ana içeriğe geç → input[radio]:Elif Yılmaz Çalışan Kı → button[button]:Elif Yılmaz olarak dev → body (sayfa sonu) → a:Ana içeriğe geç → input[radio]:Elif Yılmaz Çalışan Kı → button[button]:Elif Yılmaz olarak dev → body (sayfa sonu) → a:Ana içeriğe geç → input[radio]:Elif Yılmaz Çalışan Kı",
+      "status": "Geçti"
+    },
+    {
+      "id": "UI-LOGIN-01",
+      "area": "Giriş",
+      "role": "Çalışan",
+      "type": "Uçtan uca/UI",
+      "scenario": "Demo hesabı seçip giriş → çalışan paneli",
+      "expected": "/panel, konsol hatası yok",
+      "actual": "url=/panel, konsol=1 Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "status": "Kaldı",
+      "evidence": ""
+    },
+    {
+      "id": "UI-SESS-01",
+      "area": "Oturum",
+      "role": "Çalışan",
+      "type": "Uçtan uca/UI",
+      "scenario": "Çıkıştan sonra geri tuşu korumalı sayfayı göstermez",
+      "expected": "/giris’e yönlenir",
+      "actual": "geri sonrası url=/giris (korumalı metin sayısı=0)",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "UI-PAGE-emp-mobil",
+      "area": "Ekranlar",
+      "role": "Çalışan",
+      "type": "Uçtan uca/UI",
+      "scenario": "Çalışan 7 ekran, mobil 375×812: açılış, yatay taşma, konsol/ağ hatası",
+      "expected": "yönlenme yok, taşma 0px, hata 0",
+      "actual": "taşma>0: -; yönlenen: -; konsol=0 ; ağ=0 ; maks açılış=1005ms",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "UI-PAGE-mgr-mobil",
+      "area": "Ekranlar",
+      "role": "Yönetici",
+      "type": "Uçtan uca/UI",
+      "scenario": "Yönetici 1 ekran, mobil 375×812: açılış, yatay taşma, konsol/ağ hatası",
+      "expected": "yönlenme yok, taşma 0px, hata 0",
+      "actual": "taşma>0: -; yönlenen: -; konsol=0 ; ağ=0 ; maks açılış=1052ms",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "UI-PAGE-adm-mobil",
+      "area": "Ekranlar",
+      "role": "Admin",
+      "type": "Uçtan uca/UI",
+      "scenario": "Admin 10 ekran, mobil 375×812: açılış, yatay taşma, konsol/ağ hatası",
+      "expected": "yönlenme yok, taşma 0px, hata 0",
+      "actual": "taşma>0: /admin/audit(29px); yönlenen: -; konsol=0 ; ağ=0 ; maks açılış=1017ms",
+      "status": "Kaldı",
+      "evidence": ""
+    },
+    {
+      "id": "UI-PAGE-emp-tablet",
+      "area": "Ekranlar",
+      "role": "Çalışan",
+      "type": "Uçtan uca/UI",
+      "scenario": "Çalışan 7 ekran, tablet 768×1024: açılış, yatay taşma, konsol/ağ hatası",
+      "expected": "yönlenme yok, taşma 0px, hata 0",
+      "actual": "taşma>0: -; yönlenen: -; konsol=0 ; ağ=0 ; maks açılış=1004ms",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "UI-PAGE-mgr-tablet",
+      "area": "Ekranlar",
+      "role": "Yönetici",
+      "type": "Uçtan uca/UI",
+      "scenario": "Yönetici 1 ekran, tablet 768×1024: açılış, yatay taşma, konsol/ağ hatası",
+      "expected": "yönlenme yok, taşma 0px, hata 0",
+      "actual": "taşma>0: -; yönlenen: -; konsol=0 ; ağ=0 ; maks açılış=1064ms",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "UI-PAGE-adm-tablet",
+      "area": "Ekranlar",
+      "role": "Admin",
+      "type": "Uçtan uca/UI",
+      "scenario": "Admin 10 ekran, tablet 768×1024: açılış, yatay taşma, konsol/ağ hatası",
+      "expected": "yönlenme yok, taşma 0px, hata 0",
+      "actual": "taşma>0: -; yönlenen: -; konsol=0 ; ağ=0 ; maks açılış=1019ms",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "UI-PAGE-emp-masaustu",
+      "area": "Ekranlar",
+      "role": "Çalışan",
+      "type": "Uçtan uca/UI",
+      "scenario": "Çalışan 7 ekran, masaustu 1440×900: açılış, yatay taşma, konsol/ağ hatası",
+      "expected": "yönlenme yok, taşma 0px, hata 0",
+      "actual": "taşma>0: -; yönlenen: -; konsol=0 ; ağ=0 ; maks açılış=1005ms",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "UI-PAGE-mgr-masaustu",
+      "area": "Ekranlar",
+      "role": "Yönetici",
+      "type": "Uçtan uca/UI",
+      "scenario": "Yönetici 1 ekran, masaustu 1440×900: açılış, yatay taşma, konsol/ağ hatası",
+      "expected": "yönlenme yok, taşma 0px, hata 0",
+      "actual": "taşma>0: -; yönlenen: -; konsol=0 ; ağ=0 ; maks açılış=1048ms",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "UI-PAGE-adm-masaustu",
+      "area": "Ekranlar",
+      "role": "Admin",
+      "type": "Uçtan uca/UI",
+      "scenario": "Admin 10 ekran, masaustu 1440×900: açılış, yatay taşma, konsol/ağ hatası",
+      "expected": "yönlenme yok, taşma 0px, hata 0",
+      "actual": "taşma>0: -; yönlenen: -; konsol=0 ; ağ=0 ; maks açılış=1025ms",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "UI-A11Y-02",
+      "area": "Ekranlar",
+      "role": "Tümü",
+      "type": "Erişilebilirlik",
+      "scenario": "axe-core WCAG 2.1 A/AA — 18 ekran × (mobil, masaüstü)",
+      "expected": "0 ihlal",
+      "actual": "button-name[critical] 18 ekran; color-contrast[serious] 36 ekran; aria-prohibited-attr[serious] 6 ekran; scrollable-region-focusable[serious] 5 ekran; aria-progressbar-name[serious] 2 ekran",
+      "status": "Kaldı",
+      "evidence": "results/ui-a11y.json"
+    },
+    {
+      "id": "UI-XSS-01",
+      "area": "Rezervasyon",
+      "role": "Çalışan",
+      "type": "Güvenlik/UI",
+      "scenario": "Notta saklanan HTML/JS yükü arayüzde çalışmaz",
+      "expected": "dialog yok, <img> DOM'a eklenmez",
+      "actual": "rezervasyon=oluştu, dialog=0, enjekte img=0, metin olarak görünen=1",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "UI-ERR-01",
+      "area": "Hata durumları",
+      "role": "Çalışan",
+      "type": "Dayanıklılık/UI",
+      "scenario": "Sunucu 500 ve ağ kesintisinde kullanıcıya anlaşılır mesaj (boş ekran değil)",
+      "expected": "Hata mesajı + yeniden dene",
+      "actual": "500: \"Bu ekran yüklenirken bir sorun oluştu İşleminiz tamamlanamadı. Sayfayı yeniden deneyebilir\"; ağ: \"Rezervasyonlarım Yaklaşan ve geçmiş masa ile toplantı odası rezervasyonlarınız. Toplantı o\"; yeniden dene düğmesi=1",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "UI-EMPTY-01",
+      "area": "Boş durum",
+      "role": "Çalışan (yeni)",
+      "type": "Kullanılabilirlik/UI",
+      "scenario": "Hiç rezervasyonu olmayan kullanıcı Rezervasyonlarım (mobil)",
+      "expected": "Açıklayıcı boş durum + yönlendirme",
+      "actual": "Rezervasyonlarım Yaklaşan ve geçmiş masa ile toplantı odası rezervasyonlarınız. Toplantı odası ayır Masa rezerve et Yaklaşan masa rezervasyonları 0 aktif rezerv",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "UI-ROLE-01",
+      "area": "Yetki",
+      "role": "Çalışan",
+      "type": "Güvenlik/UI",
+      "scenario": "Çalışan yönetim/admin URL'lerini doğrudan açar",
+      "expected": "/yetkisiz veya panele yönlenir",
+      "actual": "/yonetim→/yetkisiz, /admin→/yetkisiz, /admin/kullanicilar→/yetkisiz",
+      "status": "Geçti",
+      "evidence": ""
+    }
+  ]
+}

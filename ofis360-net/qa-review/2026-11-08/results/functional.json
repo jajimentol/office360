@@ -1,0 +1,248 @@
+{
+  "base": "http://localhost:5211/api",
+  "ranAt": "2026-11-07T23:50:07.446Z",
+  "rows": [
+    {
+      "id": "FN-RULE-01",
+      "area": "Masa",
+      "role": "Çalışan",
+      "type": "Fonksiyonel/API",
+      "scenario": "Geçmiş tarih ve 14 günden ileri tarih reddedilir",
+      "expected": "4xx, kural ihlali kodu",
+      "actual": "geçmiş=422 PAST_DATE; +40 gün=422 ADVANCE_WINDOW_EXCEEDED",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "FN-RULE-02",
+      "area": "Masa",
+      "role": "Çalışan",
+      "type": "Fonksiyonel/API",
+      "scenario": "Rezervasyon oluşur, Türkçe karakter/emoji not korunur, uygulama içi bildirim düşer",
+      "expected": "200, not aynen, bildirim ≥1",
+      "actual": "oluşturma=200, not korundu=true, bildirim=1, kanallar=IN_APP:true,EMAIL:false,TEAMS:false",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "FN-RULE-03",
+      "area": "Masa",
+      "role": "Çalışan",
+      "type": "Fonksiyonel/API",
+      "scenario": "Aynı gün ikinci masa reddedilir",
+      "expected": "4xx ONE_DESK_PER_DAY",
+      "actual": "HTTP 422 [\"ONE_DESK_PER_DAY\"]",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "FN-RULE-04",
+      "area": "Masa",
+      "role": "Çalışan",
+      "type": "Fonksiyonel/API",
+      "scenario": "İptal; aynı iptalin tekrar gönderilmesi (yenile/geri tuşu) tutarlı yanıt verir",
+      "expected": "200 sonra 200/409 (500 değil), durum CANCELLED",
+      "actual": "ilk=200, tekrar=409 CONFLICT",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "FN-HIST-01",
+      "area": "Durum geçmişi",
+      "role": "Çalışan",
+      "type": "Veri bütünlüğü/DB",
+      "scenario": "Oluşturma ve iptal RESERVATION_STATUS_HISTORY'ye aktörle yazılır (canlı API)",
+      "expected": "(-→BOOKED, u) (BOOKED→CANCELLED, u)",
+      "actual": "[[\"\",\"BOOKED\",\"d23671ebbfdc49db84b656157cae461b\"],[\"BOOKED\",\"CANCELLED\",\"d23671ebbfdc49db84b656157cae461b\"]]",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "FN-CONC-01",
+      "area": "Masa",
+      "role": "Çalışan ×20",
+      "type": "Eşzamanlılık",
+      "scenario": "20 farklı kullanıcı aynı masa/gün için aynı anda istek atar",
+      "expected": "Tam 1 başarı, diğerleri 409/4xx, DB'de 1 aktif kayıt, 500 yok",
+      "actual": "yanıtlar {\"200\":1,\"409\":19}, DB aktif=1",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "FN-CONC-02",
+      "area": "Masa",
+      "role": "Çalışan",
+      "type": "Eşzamanlılık",
+      "scenario": "Aynı kullanıcı aynı gün için 10 farklı masaya eşzamanlı istek (çift tıklama/çoklu sekme)",
+      "expected": "Tam 1 başarı, DB'de 1, 500 yok",
+      "actual": "yanıtlar {\"200\":1,\"409\":6}, DB aktif=1",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "FN-CONC-03",
+      "area": "Masa",
+      "role": "Çalışan",
+      "type": "Eşzamanlılık",
+      "scenario": "Haftalık limit (3 gün) — aynı haftanın 5 gününe eşzamanlı 5 istek",
+      "expected": "En fazla 3 başarı",
+      "actual": "yanıtlar {\"200\":3,\"422\":2}, DB aktif=3 (hafta: 2026-11-09..2026-11-13)",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "FN-CONC-04",
+      "area": "Oda",
+      "role": "Çalışan ×10",
+      "type": "Eşzamanlılık",
+      "scenario": "10 kullanıcı aynı odanın çakışan saatlerine (10:00-11:00 / 10:30-11:30) aynı anda istek",
+      "expected": "Tam 1 başarı, DB'de çakışma yok",
+      "actual": "yanıtlar {\"200\":1,\"409\":9}, DB çakışan aktif=1",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "FN-CONC-05",
+      "area": "Masa",
+      "role": "Çalışan + Admin",
+      "type": "Eşzamanlılık",
+      "scenario": "Aynı rezervasyona eşzamanlı check-in ve admin iptali (15 deneme)",
+      "expected": "Son durum tutarlı: CANCELLED veya CHECKED_IN+aktif anahtar; ikisi birden 200 olmaz",
+      "actual": "ikisi de 200: 15/15; CHECKED_IN ama aktif anahtar NULL: 1/15 200/200->CHECKED_IN,NULL",
+      "status": "Kaldı",
+      "evidence": ""
+    },
+    {
+      "id": "FN-ADM-01",
+      "area": "Kapatma",
+      "role": "Admin",
+      "type": "Fonksiyonel/API",
+      "scenario": "Etkilenen rezervasyonu olan masaya 232 karakterlik notla kapatma (validator 240'a izin verir)",
+      "expected": "200, rezervasyon iptal",
+      "actual": "HTTP 500 INTERNAL_ERROR; rezervasyon durumu=BOOKED",
+      "status": "Kaldı",
+      "evidence": ""
+    },
+    {
+      "id": "FN-ADM-02",
+      "area": "Kapatma",
+      "role": "Admin",
+      "type": "Veri bütünlüğü",
+      "scenario": "Kapatma bitiş tarihi uzatılınca yeni kapsanan rezervasyon iptal edilmeli",
+      "expected": "CANCELLED",
+      "actual": "uzatma=200, rezervasyon=200/BOOKED",
+      "status": "Kaldı",
+      "evidence": ""
+    },
+    {
+      "id": "FN-ADM-03",
+      "area": "Kapatma",
+      "role": "Admin",
+      "type": "Doğrulama",
+      "scenario": "Kapatma bitişi başlangıçtan önceye çekilir",
+      "expected": "400",
+      "actual": "HTTP 500 INTERNAL_ERROR",
+      "status": "Kaldı",
+      "evidence": ""
+    },
+    {
+      "id": "FN-ADM-04",
+      "area": "Kullanıcı",
+      "role": "Admin",
+      "type": "Veri bütünlüğü",
+      "scenario": "Pasifleştirilen çalışanın gelecekteki masa rezervasyonu serbest bırakılmalı",
+      "expected": "CANCELLED; masa diğerlerine açık",
+      "actual": "rezervasyon=BOOKED, masa diğerine durum=RESERVED",
+      "status": "Kaldı",
+      "evidence": ""
+    },
+    {
+      "id": "FN-ADM-05",
+      "area": "Kat",
+      "role": "Admin",
+      "type": "Doğrulama",
+      "scenario": "Kat güncellemesinde planWidth=-5 / boş ad; bölgede geçersiz tür",
+      "expected": "Hepsi 400",
+      "actual": "planWidth=-5 → 200; ad='' → 500; zone.kind=HACK → 500 (değerler geri yüklendi)",
+      "status": "Kaldı",
+      "evidence": ""
+    },
+    {
+      "id": "FN-ADM-06",
+      "area": "Kural",
+      "role": "Admin",
+      "type": "Doğrulama",
+      "scenario": "Çalışma saati başlangıcı tek başına 20:00 yapılır (bitiş 18:00 iken)",
+      "expected": "400 (başlangıç < bitiş)",
+      "actual": "HTTP 200; kayıt=1200-1140 (önce 480-1140, geri yüklendi)",
+      "status": "Kaldı",
+      "evidence": ""
+    },
+    {
+      "id": "FN-ADM-07",
+      "area": "Oda",
+      "role": "Admin",
+      "type": "Doğrulama",
+      "scenario": "Admin var olmayan kullanıcı adına oda rezervasyonu",
+      "expected": "404",
+      "actual": "HTTP 500 INTERNAL_ERROR",
+      "status": "Kaldı",
+      "evidence": ""
+    },
+    {
+      "id": "FN-ADM-08",
+      "area": "Kullanıcı",
+      "role": "Admin",
+      "type": "Doğrulama",
+      "scenario": "Aynı e-posta (büyük/küçük harf farkı ve birebir) ile ikinci kullanıcı",
+      "expected": "409/400 (500 değil), harf duyarsız tekil",
+      "actual": "ilk=200 , küçük harf=200, birebir=409 CONFLICT",
+      "status": "Kaldı",
+      "evidence": ""
+    },
+    {
+      "id": "FN-TZ-01",
+      "area": "Saat dilimi",
+      "role": "Çalışan",
+      "type": "Fonksiyonel/API",
+      "scenario": "\"Bugün\" Europe/Istanbul'a göre hesaplanır",
+      "expected": "2026-11-08",
+      "actual": "today=2026-11-08 (UTC tarihi 2026-11-07)",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "FN-REP-01",
+      "area": "Analitik",
+      "role": "Yönetici",
+      "type": "Fonksiyonel/API",
+      "scenario": "İstanbul 09:15'te yapılan check-in saatlik grafikte 09:00 kovasına düşer",
+      "expected": "09:00 kovası +1",
+      "actual": "09:00 kovası farkı=0; 08:00 farkı=0 (kayıt geri yüklendi)",
+      "status": "Kaldı",
+      "evidence": ""
+    },
+    {
+      "id": "FN-REP-02",
+      "area": "Analitik",
+      "role": "Yönetici",
+      "type": "Fonksiyonel/API",
+      "scenario": "30 yıllık aralık reddedilir; CSV UTF-8 BOM + ; ayraçlı iner",
+      "expected": "400; CSV BOM, text/csv",
+      "actual": "aralık=400; csv=200 text/csv; charset=utf-8 BOM=true 83ms",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "FN-REP-03",
+      "area": "Denetim",
+      "role": "Yönetici",
+      "type": "Fonksiyonel/API",
+      "scenario": "Rapor dışa aktarımı denetime yazılır",
+      "expected": "REPORT_EXPORT kaydı",
+      "actual": "REPORT_EXPORT kayıt=42",
+      "status": "Geçti",
+      "evidence": ""
+    }
+  ]
+}

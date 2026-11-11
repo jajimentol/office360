@@ -1,0 +1,61 @@
+{
+  "base": "http://localhost:5211/api",
+  "ranAt": "2026-11-08T00:30:34.140Z",
+  "rows": [
+    {
+      "id": "RES-01",
+      "area": "Dayanıklılık",
+      "role": "Çalışan",
+      "type": "Dayanıklılık",
+      "scenario": "Oracle yanıt vermiyor (docker pause): istek sınırlı sürede anlaşılır hatayla dönmeli",
+      "expected": "≤ 30 sn içinde 503/500 + mesaj",
+      "actual": "panel/home → zaman aşımı(istemci 70sn) 70006ms; health → zaman aşımı 70006ms \"TimeoutError\"",
+      "status": "Kaldı",
+      "evidence": ""
+    },
+    {
+      "id": "RES-02",
+      "area": "Dayanıklılık",
+      "role": "Çalışan",
+      "type": "Dayanıklılık",
+      "scenario": "Oracle geri gelince uygulama yeniden başlatılmadan toparlanır",
+      "expected": "health 200, istek 200",
+      "actual": "toparlanma=0sn, sonraki istek=200 588ms (öncesi 15ms)",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "RES-03",
+      "area": "Dayanıklılık",
+      "role": "Çalışan",
+      "type": "Dayanıklılık",
+      "scenario": "Oracle kapalı: API hızlı ve sızıntısız hata döner; sağlık ucu 503",
+      "expected": "panel 500/503 hızlı, health 503",
+      "actual": "panel/home → 500 2088ms \"{\"error\":{\"code\":\"INTERNAL_ERROR\",\"message\":\"Beklenmeyen bir hata olu\\\"; health → 503 6125ms",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "RES-04",
+      "area": "Dayanıklılık",
+      "role": "Çalışan",
+      "type": "Dayanıklılık",
+      "scenario": "Oracle yeniden başlayınca API kendiliğinden toparlanır (bayat havuz bağlantıları)",
+      "expected": "health 200, ilk istek 200",
+      "actual": "Oracle başlat→sağlıklı=9sn, ilk istek=200 177ms",
+      "status": "Geçti",
+      "evidence": ""
+    },
+    {
+      "id": "RES-05",
+      "area": "İşletim",
+      "role": "-",
+      "type": "Dayanıklılık/Yapılandırma",
+      "scenario": "Veritabanı konteyneri yeniden başlatma politikası ve sağlık durumu",
+      "expected": "restart politikası; healthy",
+      "actual": "starting restart=no",
+      "status": "Kaldı",
+      "evidence": "docker/oracle/compose.yml"
+    }
+  ]
+}
