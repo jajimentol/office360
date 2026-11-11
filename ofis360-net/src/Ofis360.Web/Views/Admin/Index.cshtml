@@ -1,0 +1,65 @@
+<div class="page-head">
+    <div>
+        <h1>Admin panosu</h1>
+        <p class="muted">{{ vm.today | dayLong }} · ofisin bugünkü durumu ve son işlemler.</p>
+    </div>
+</div>
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+
+<div class="kpis" ng-if="vm.d">
+    <div class="kpi"><strong>{{ vm.todayOccupancy() | percent }}</strong><span>bugünkü masa doluluğu · {{ vm.todayReserved() }} / {{ vm.todayTotal() }}</span></div>
+    <div class="kpi"><strong>{{ vm.d.desks.total }}</strong><span>masa · {{ vm.d.inactive.total }} pasif</span><a href="/Admin/Desks">Masalar ›</a></div>
+    <div class="kpi"><strong>{{ vm.d.rooms.length }}</strong><span>toplantı odası</span><a href="/Admin/Rooms">Odalar ›</a></div>
+    <div class="kpi"><strong>{{ vm.d.users.active }}</strong><span>aktif kullanıcı · {{ vm.d.users.withoutGrade }} kademesiz</span><a href="/Admin/Users">Kullanıcılar ›</a></div>
+    <div class="kpi"><strong>{{ vm.d.closures.length }}</strong><span>aktif kapatma</span><a href="/Admin/Closures">Kapatmalar ›</a></div>
+</div>
+
+<div class="two-col" ng-if="vm.d" style="margin-top:14px">
+    <section class="card">
+        <h2>Bugünkü kat doluluğu</h2>
+        <table class="table">
+            <thead><tr><th>Kat</th><th>Dolu / masa</th><th>Doluluk</th></tr></thead>
+            <tbody>
+                <tr ng-repeat="f in vm.d.floors">
+                    <td>{{ f.name }}<br /><span class="muted small">{{ f.buildingName }}</span></td>
+                    <td>{{ f.reservedDesks }} / {{ f.totalDesks }}</td>
+                    <td><div class="bar"><span ng-style="{ width: f.occupancyRate + '%' }"></span></div><span class="muted small">{{ f.occupancyRate | percent }}</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+    <section class="card">
+        <div class="section-head"><h2>Son işlemler</h2><a href="/Admin/Audit" class="small">Tümü ›</a></div>
+        <ul class="activity">
+            <li ng-repeat="a in vm.d.audit.items">
+                <span class="muted small">{{ a.createdAt | dateTime }}</span>
+                <span><strong>{{ a.actorName }}</strong> · {{ a.summary }}</span>
+            </li>
+        </ul>
+    </section>
+    <section class="card">
+        <div class="section-head"><h2>Geçerli kurallar</h2><a href="/Admin/Rules" class="small">Kurallar ›</a></div>
+        <ul class="rule-summary">
+            <li>Önceden rezervasyon penceresi: <strong>{{ vm.d.rules.advanceBookingDays.enabled ? vm.d.rules.advanceBookingDays.days + ' iş günü' : 'kapalı' }}</strong></li>
+            <li>Haftalık masa limiti: <strong>{{ vm.d.rules.weeklyDeskLimit.enabled ? vm.d.rules.weeklyDeskLimit.limit + ' gün' : 'kapalı' }}</strong></li>
+            <li>Aynı gün tek masa: <strong>{{ vm.d.rules.oneDeskPerDay.enabled ? 'açık' : 'kapalı' }}</strong></li>
+            <li>Yalnızca çalışma günleri: <strong>{{ vm.d.rules.workingDaysOnly.enabled ? 'açık' : 'kapalı' }}</strong></li>
+            <li>Toplantı odası mesai saatleri: <strong>{{ vm.d.rules.roomWorkingHours.startMinutes | hm }}–{{ vm.d.rules.roomWorkingHours.endMinutes | hm }}</strong></li>
+            <li>Toplantı slot aralığı: <strong>{{ vm.d.rules.roomSlotMinutes.minutes }} dk</strong></li>
+        </ul>
+    </section>
+    <section class="card">
+        <div class="section-head"><h2>Aktif kapatmalar</h2><a href="/Admin/Closures" class="small">Yönet ›</a></div>
+        <p class="muted" ng-if="!vm.d.closures.length">Aktif kapatma yok.</p>
+        <ul class="activity">
+            <li ng-repeat="c in vm.d.closures | limitTo:8">
+                <span><strong>{{ c.scopeLabel }}</strong> · {{ c.desk.code || c.room.name || c.floor.name }}</span>
+                <span class="muted small">{{ c.startDate | dayShort }} – {{ c.endDate | dayShort }} · {{ c.reasonLabel }}</span>
+            </li>
+        </ul>
+    </section>
+</div>
+
+@section Scripts {
+    <script src="~/js/admin/home.js" asp-append-version="true"></script>
+}

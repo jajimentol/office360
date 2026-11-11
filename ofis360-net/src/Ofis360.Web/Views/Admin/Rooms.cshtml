@@ -1,0 +1,112 @@
+<div class="page-head">
+    <div>
+        <h1>Toplantı odaları</h1>
+        <p class="muted">Odaları, kapasitelerini, donanımlarını ve odaya özel kuralları (kademe, öncelikli kişiler, Sekreter) yönetin.</p>
+    </div>
+    <button class="btn btn-primary" ng-click="vm.openForm()">Yeni oda</button>
+</div>
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+<div class="alert alert-warn" ng-if="vm.gaps.length">
+    Öncelik süresi tanımlı ama öncelikli kişisi olmayan odalar: <strong ng-repeat="g in vm.gaps">{{ g.name }} ({{ g.code }}){{ $last ? '' : ', ' }}</strong>
+</div>
+
+<section class="card">
+    <div class="filter-bar">
+        <label class="field"><span>Kat</span>
+            <select ng-model="vm.floorFilter" ng-options="f.id as f.label for f in vm.floors"><option value="">Tüm katlar</option></select>
+        </label>
+        <label class="field"><span>Ara</span><input type="search" ng-model="vm.text" placeholder="Oda adı veya kodu" /></label>
+    </div>
+    <div class="table-scroll">
+        <table class="table">
+            <thead><tr><th>Oda</th><th>Kat</th><th>Kapasite</th><th>Donanım</th><th>Rezervasyon</th><th>Durum</th><th></th></tr></thead>
+            <tbody>
+                <tr ng-repeat="r in vm.rooms | filter:vm.matches">
+                    <td><strong>{{ r.name }}</strong><br /><span class="muted small">{{ r.code }}<span ng-if="!r.placed"> · krokide değil</span></span></td>
+                    <td>{{ r.floor.name }}</td>
+                    <td>{{ r.capacity }} kişi</td>
+                    <td class="small">{{ vm.featureNames(r) }}</td>
+                    <td class="muted">{{ r.reservationCount || 0 }}</td>
+                    <td><span class="chip" ng-class="{ 'chip-ok': r.active }">{{ r.active ? 'Aktif' : 'Pasif' }}</span></td>
+                    <td class="right nowrap">
+                        <button class="btn btn-ghost btn-xs" ng-click="vm.openPolicy(r)">Kurallar</button>
+                        <button class="btn btn-ghost btn-xs" ng-click="vm.openForm(r)">Düzenle</button>
+                        <button class="btn btn-ghost btn-xs" ng-click="vm.toggle(r)" ng-disabled="vm.busy">{{ r.active ? 'Pasifleştir' : 'Aktifleştir' }}</button>
+                        <button class="btn btn-danger-ghost btn-xs" ng-click="vm.remove(r)" ng-disabled="vm.busy">Sil</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<o3-modal open="vm.form" title="{{ vm.form.id ? vm.form.name + ' düzenle' : 'Yeni toplantı odası' }}" on-close="vm.form = null">
+    <form ng-submit="vm.save()" novalidate>
+        <div class="grid-2">
+            <label class="field"><span>Oda adı</span><input type="text" ng-model="vm.form.name" required /></label>
+            <label class="field"><span>Kod</span><input type="text" ng-model="vm.form.code" required placeholder="Örn. PT36-A09" /></label>
+            <label class="field"><span>Kat</span><select ng-model="vm.form.floorId" ng-options="f.id as f.label for f in vm.floors"></select></label>
+            <label class="field"><span>Kapasite</span><input type="number" min="1" ng-model="vm.form.capacity" /></label>
+        </div>
+        <div class="grid-3">
+            <label class="field"><span>X</span><input type="number" ng-model="vm.form.x" /></label>
+            <label class="field"><span>Y</span><input type="number" ng-model="vm.form.y" /></label>
+            <label class="field"><span>Genişlik × Yükseklik</span><span class="inline-form"><input type="number" ng-model="vm.form.width" style="width:80px" /><input type="number" ng-model="vm.form.height" style="width:80px" /></span></label>
+        </div>
+        <label class="field"><span>Not</span><input type="text" ng-model="vm.form.notes" maxlength="200" /></label>
+        <span class="label">Donanım</span>
+        <div class="chip-filters">
+            <button type="button" class="filter-chip" ng-repeat="f in vm.features" ng-class="{ active: vm.form.featureKeys.indexOf(f.key) >= 0 }" ng-click="vm.toggleFeature(f.key)">{{ f.name }}</button>
+        </div>
+        <label class="switch"><input type="checkbox" ng-model="vm.form.active" /><span>Aktif</span></label>
+        <div class="alert alert-error" ng-if="vm.formError">{{ vm.formError }}</div>
+        <div class="actions end">
+            <button type="button" class="btn btn-ghost" ng-click="vm.form = null">Vazgeç</button>
+            <button type="submit" class="btn btn-primary" ng-disabled="vm.busy">Kaydet</button>
+        </div>
+    </form>
+</o3-modal>
+
+<o3-modal open="vm.policy" title="{{ vm.policy.roomName }} kuralları" on-close="vm.policy = null" wide="true">
+    <p class="muted">Yalnızca yeni rezervasyonlarda geçerli olur.</p>
+    <label class="switch"><input type="checkbox" ng-model="vm.policy.secretaryOnly" /><span>Yalnızca Sekreter rezerve edebilir</span></label>
+
+    <h3>Kademe erişimi</h3>
+    <p class="muted small">Hiçbir kademe seçilmezse oda herkese açıktır. Kapasite: {{ vm.policy.capacity }} kişi.</p>
+    <table class="table">
+        <thead><tr><th>Kademe</th><th>Açabilir</th><th>En az kişi</th><th>Önceliği beklemez</th></tr></thead>
+        <tbody>
+            <tr ng-repeat="row in vm.policy.rows">
+                <td>{{ row.label }}</td>
+                <td><input type="checkbox" ng-model="row.allowed" /></td>
+                <td><input type="number" min="1" max="{{ vm.policy.capacity }}" ng-model="row.min" ng-disabled="!row.allowed" style="width:80px" /></td>
+                <td><input type="checkbox" ng-model="row.bypass" ng-disabled="!row.allowed" /></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Öncelikli kişiler</h3>
+    <p class="muted small">Listedekiler odayı kendi rezervasyon penceresinde alır, diğerleri son iş günlerinde alabilir.</p>
+    <ul class="chips-list">
+        <li ng-repeat="p in vm.policy.priorityUsers">{{ p.fullName }} <span class="muted small">{{ p.title }}</span>
+            <button class="btn btn-ghost btn-xs" ng-click="vm.policy.priorityUsers.splice($index, 1)" aria-label="Kaldır">✕</button></li>
+    </ul>
+    <div class="inline-form">
+        <input type="search" ng-model="vm.personQuery" ng-model-options="{ debounce: 300 }" ng-change="vm.searchPeople()" placeholder="Kişi ara ve ekle" />
+    </div>
+    <ul class="chips-list" ng-if="vm.people.length">
+        <li ng-repeat="p in vm.people"><button class="btn btn-ghost btn-xs" ng-click="vm.addPerson(p)">+ {{ p.fullName }}</button> <span class="muted small">{{ p.departmentName }}</span></li>
+    </ul>
+    <label class="field" style="margin-top:12px"><span>Diğerlerine açılma süresi (son kaç iş günü)</span>
+        <input type="number" min="1" max="90" ng-model="vm.policy.priorityOpenDays" placeholder="Boş: öncelik uygulanmaz" style="width:160px" />
+    </label>
+    <div class="alert alert-error" ng-if="vm.policyError">{{ vm.policyError }}</div>
+    <div class="actions end">
+        <button class="btn btn-ghost" ng-click="vm.policy = null">Vazgeç</button>
+        <button class="btn btn-primary" ng-click="vm.savePolicy()" ng-disabled="vm.busy">Kaydet</button>
+    </div>
+</o3-modal>
+
+@section Scripts {
+    <script src="~/js/admin/rooms.js" asp-append-version="true"></script>
+}

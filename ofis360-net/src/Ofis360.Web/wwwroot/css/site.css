@@ -326,3 +326,8 @@ textarea { font: inherit; border: 1px solid var(--line); border-radius: 9px; pad
   .grid-2, .grid-3, .chart-grid { grid-template-columns: 1fr; }
   .setting-edit textarea { width: 100%; }
 }
+.activity { list-style: none; padding: 0; margin: 0; }
+.activity li { display: flex; flex-direction: column; gap: 1px; padding: 7px 0; border-bottom: 1px dashed var(--line); font-size: 13px; }
+.activity li:last-child { border-bottom: 0; }
+.rule-summary { margin: 0; padding-left: 18px; line-height: 1.9; }
+.error-text { color: var(--error); font-size: 12px; }

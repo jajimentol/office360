@@ -1,0 +1,78 @@
+<div class="page-head">
+    <div>
+        <h1>Masa yönetimi</h1>
+        <p class="muted">Masaları ekleyin, özelliklerini ve durumlarını düzenleyin. Krokideki yerleşim plan düzenleyicisinden yapılır.</p>
+    </div>
+    <button class="btn btn-primary" ng-click="vm.openForm()">Yeni masa</button>
+</div>
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+
+<section class="card">
+    <form class="filter-bar" ng-submit="vm.search()">
+        <label class="field"><span>Kat</span>
+            <select ng-model="vm.q.floorId" ng-change="vm.search()" ng-options="f.id as f.label for f in vm.floors"><option value="">Tüm katlar</option></select>
+        </label>
+        <label class="field"><span>Yerleşim</span>
+            <select ng-model="vm.q.placement" ng-change="vm.search()"><option value="">Tümü</option><option value="placed">Krokide</option><option value="unplaced">Krokide değil</option></select>
+        </label>
+        <label class="field"><span>Ara</span><input type="search" ng-model="vm.q.search" placeholder="Masa kodu" /></label>
+        <label class="switch"><input type="checkbox" ng-model="vm.q.onlyInactive" ng-change="vm.search()" /><span>Yalnızca pasif</span></label>
+        <button class="btn btn-primary btn-sm" type="submit">Ara</button>
+    </form>
+
+    <p class="muted empty" ng-if="vm.page && !vm.page.items.length">Masa bulunamadı.</p>
+    <div class="table-scroll" ng-if="vm.page.items.length">
+        <table class="table">
+            <thead><tr><th>Kod</th><th>Kat / bölge</th><th>Özellikler</th><th>İşaretler</th><th>Rezervasyon</th><th>Durum</th><th></th></tr></thead>
+            <tbody>
+                <tr ng-repeat="d in vm.page.items">
+                    <td><strong>{{ d.code }}</strong><br /><span class="muted small" ng-if="!d.placed">krokide değil</span></td>
+                    <td>{{ d.floor.name }}<br /><span class="muted small">{{ d.zone.name }}</span></td>
+                    <td class="small">{{ vm.featureNames(d) }}</td>
+                    <td><span class="chip" ng-if="d.popular">Popüler</span> <span class="chip" ng-if="d.accessibleOnly">Erişilebilir</span></td>
+                    <td class="muted">{{ d.reservationCount || 0 }}</td>
+                    <td><span class="chip" ng-class="{ 'chip-ok': d.active }">{{ d.active ? 'Aktif' : 'Pasif' }}</span></td>
+                    <td class="right nowrap">
+                        <button class="btn btn-ghost btn-xs" ng-click="vm.openForm(d)">Düzenle</button>
+                        <button class="btn btn-ghost btn-xs" ng-click="vm.toggle(d)" ng-disabled="vm.busy">{{ d.active ? 'Pasifleştir' : 'Aktifleştir' }}</button>
+                        <button class="btn btn-danger-ghost btn-xs" ng-click="vm.remove(d)" ng-disabled="vm.busy">Sil</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <o3-pager pager="vm.pager" on-change="vm.load()"></o3-pager>
+</section>
+
+<o3-modal open="vm.form" title="{{ vm.form.id ? vm.form.code + ' masasını düzenle' : 'Yeni masa' }}" on-close="vm.form = null">
+    <form ng-submit="vm.save()" novalidate>
+        <div class="grid-2">
+            <label class="field"><span>Masa kodu</span><input type="text" ng-model="vm.form.code" required placeholder="Örn. PT36-A05-21" /></label>
+            <label class="field"><span>Kat</span><select ng-model="vm.form.floorId" ng-change="vm.form.zoneId = vm.zonesOf(vm.form.floorId)[0].id" ng-options="f.id as f.label for f in vm.floors"></select></label>
+            <label class="field"><span>Bölge</span><select ng-model="vm.form.zoneId" ng-options="z.id as z.name for z in vm.zonesOf(vm.form.floorId)"></select></label>
+            <div class="grid-2">
+                <label class="field"><span>X</span><input type="number" ng-model="vm.form.x" /></label>
+                <label class="field"><span>Y</span><input type="number" ng-model="vm.form.y" /></label>
+            </div>
+        </div>
+        <label class="field"><span>Not</span><input type="text" ng-model="vm.form.notes" maxlength="200" /></label>
+        <span class="label">Özellikler</span>
+        <div class="chip-filters">
+            <button type="button" class="filter-chip" ng-repeat="f in vm.features" ng-class="{ active: vm.form.featureKeys.indexOf(f.key) >= 0 }" ng-click="vm.toggleFeature(f.key)">{{ f.name }}</button>
+        </div>
+        <div class="actions">
+            <label class="switch"><input type="checkbox" ng-model="vm.form.popular" /><span>Popüler</span></label>
+            <label class="switch"><input type="checkbox" ng-model="vm.form.accessibleOnly" /><span>Erişilebilirlik için ayrılmış</span></label>
+            <label class="switch"><input type="checkbox" ng-model="vm.form.active" /><span>Aktif</span></label>
+        </div>
+        <div class="alert alert-error" ng-if="vm.formError">{{ vm.formError }}</div>
+        <div class="actions end">
+            <button type="button" class="btn btn-ghost" ng-click="vm.form = null">Vazgeç</button>
+            <button type="submit" class="btn btn-primary" ng-disabled="vm.busy">Kaydet</button>
+        </div>
+    </form>
+</o3-modal>
+
+@section Scripts {
+    <script src="~/js/admin/desks.js" asp-append-version="true"></script>
+}

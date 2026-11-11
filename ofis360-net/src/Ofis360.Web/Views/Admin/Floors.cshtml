@@ -1,0 +1,122 @@
+<div class="page-head">
+    <div>
+        <h1>Kat ve alan yönetimi</h1>
+        <p class="muted">Binalar, katlar ve bölgeler. Krokiyi çizmek ve masa/oda yerleştirmek için plan düzenleyicisini kullanın.</p>
+    </div>
+    <div class="actions">
+        <button class="btn btn-ghost" ng-click="vm.openBuilding()">Yeni bina</button>
+        <button class="btn btn-primary" ng-click="vm.openFloor()">Yeni kat</button>
+    </div>
+</div>
+<div class="alert alert-error" ng-if="vm.error">{{ vm.error }}</div>
+
+<section class="card">
+    <h2>Binalar</h2>
+    <div class="table-scroll">
+        <table class="table">
+            <thead><tr><th>Kod</th><th>Bina</th><th>Adres</th><th>Sıra</th><th>Kat</th><th>Durum</th><th></th></tr></thead>
+            <tbody>
+                <tr ng-repeat="b in vm.buildings">
+                    <td><strong>{{ b.code }}</strong></td>
+                    <td>{{ b.name }} <span class="chip" ng-if="b.isDemo">Demo</span></td>
+                    <td class="muted small">{{ b.address }}</td>
+                    <td>{{ b.order }}</td>
+                    <td>{{ b.floorCount }}</td>
+                    <td><span class="chip" ng-class="{ 'chip-ok': b.active }">{{ b.active ? 'Aktif' : 'Pasif' }}</span></td>
+                    <td class="right"><button class="btn btn-ghost btn-xs" ng-click="vm.openBuilding(b)">Düzenle</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="card">
+    <h2>Katlar</h2>
+    <div class="table-scroll">
+        <table class="table">
+            <thead><tr><th>Kat</th><th>Bina</th><th>Masa (krokide / toplam)</th><th>Aktif / kapalı masa</th><th>Oda (krokide / toplam)</th><th>Plan</th><th>Durum</th><th></th></tr></thead>
+            <tbody>
+                <tr ng-repeat="f in vm.floors">
+                    <td><strong>{{ f.name }}</strong><br /><span class="muted small">{{ f.description }}</span></td>
+                    <td>{{ f.building.name }}</td>
+                    <td>{{ vm.cap(f).placedDesks }} / {{ vm.cap(f).totalDesks }}</td>
+                    <td>{{ vm.cap(f).activeDesks }} / {{ vm.cap(f).closedDesks }}</td>
+                    <td>{{ vm.cap(f).placedRooms }} / {{ vm.cap(f).totalRooms }}</td>
+                    <td class="muted small">{{ f.planWidth }} × {{ f.planHeight }}</td>
+                    <td>
+                        <span class="chip" ng-class="{ 'chip-ok': f.active }">{{ f.active ? 'Aktif' : 'Pasif' }}</span>
+                        <span class="chip" ng-if="!f.reservable">Rezervasyona kapalı</span>
+                    </td>
+                    <td class="right nowrap">
+                        <a class="btn btn-ghost btn-xs" ng-href="/Admin/PlanEditor?floor={{ f.id }}">Planı düzenle</a>
+                        <button class="btn btn-ghost btn-xs" ng-click="vm.openZones(f)">Bölgeler</button>
+                        <button class="btn btn-ghost btn-xs" ng-click="vm.openFloor(f)">Düzenle</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<o3-modal open="vm.building" title="{{ vm.building.id ? 'Binayı düzenle' : 'Yeni bina' }}" on-close="vm.building = null">
+    <form ng-submit="vm.saveBuilding()" novalidate>
+        <div class="grid-2">
+            <label class="field"><span>Kod</span><input type="text" ng-model="vm.building.code" maxlength="10" required /></label>
+            <label class="field"><span>Ad</span><input type="text" ng-model="vm.building.name" required /></label>
+            <label class="field"><span>Adres</span><input type="text" ng-model="vm.building.address" /></label>
+            <label class="field"><span>Sıra</span><input type="number" ng-model="vm.building.order" /></label>
+        </div>
+        <label class="switch"><input type="checkbox" ng-model="vm.building.active" /><span>Aktif (pasif binadaki katlar çalışanlara görünmez)</span></label>
+        <div class="alert alert-error" ng-if="vm.formError">{{ vm.formError }}</div>
+        <div class="actions end">
+            <button type="button" class="btn btn-ghost" ng-click="vm.building = null">Vazgeç</button>
+            <button type="submit" class="btn btn-primary" ng-disabled="vm.busy">Kaydet</button>
+        </div>
+    </form>
+</o3-modal>
+
+<o3-modal open="vm.floor" title="{{ vm.floor.id ? 'Katı düzenle' : 'Yeni kat' }}" on-close="vm.floor = null">
+    <form ng-submit="vm.saveFloor()" novalidate>
+        <div class="grid-2">
+            <label class="field"><span>Bina</span><select ng-model="vm.floor.buildingId" ng-options="b.id as b.name for b in vm.buildings"></select></label>
+            <label class="field"><span>Kat numarası</span><input type="number" ng-model="vm.floor.number" /></label>
+            <label class="field"><span>Ad</span><input type="text" ng-model="vm.floor.name" required /></label>
+            <label class="field"><span>Açıklama</span><input type="text" ng-model="vm.floor.description" /></label>
+            <label class="field"><span>Plan genişliği</span><input type="number" ng-model="vm.floor.planWidth" /></label>
+            <label class="field"><span>Plan yüksekliği</span><input type="number" ng-model="vm.floor.planHeight" /></label>
+        </div>
+        <div class="actions">
+            <label class="switch"><input type="checkbox" ng-model="vm.floor.reservable" /><span>Rezervasyona açık</span></label>
+            <label class="switch"><input type="checkbox" ng-model="vm.floor.active" /><span>Aktif</span></label>
+        </div>
+        <div class="alert alert-error" ng-if="vm.formError">{{ vm.formError }}</div>
+        <div class="actions end">
+            <button type="button" class="btn btn-ghost" ng-click="vm.floor = null">Vazgeç</button>
+            <button type="submit" class="btn btn-primary" ng-disabled="vm.busy">Kaydet</button>
+        </div>
+    </form>
+</o3-modal>
+
+<o3-modal open="vm.zones" title="{{ vm.zonesFloor.name }} bölgeleri" on-close="vm.zones = null" wide="true">
+    <p class="muted">Rezervasyona kapalı bölgedeki masalar çalışanlara "kapalı" görünür ve kapasiteye sayılmaz (örn. Ortak Çalışma Alanı).</p>
+    <div class="table-scroll">
+        <table class="table">
+            <thead><tr><th>Kod</th><th>Ad</th><th>Tür</th><th>Rezervasyona açık</th><th>Sessiz</th><th>Pencere yanı</th><th></th></tr></thead>
+            <tbody>
+                <tr ng-repeat="z in vm.zones">
+                    <td class="muted">{{ z.code }}</td>
+                    <td><input type="text" ng-model="z.name" /></td>
+                    <td><select ng-model="z.kind" ng-options="k.key as k.label for k in vm.zoneKinds"></select></td>
+                    <td><input type="checkbox" ng-model="z.reservable" /></td>
+                    <td><input type="checkbox" ng-model="z.quiet" /></td>
+                    <td><input type="checkbox" ng-model="z.windowSide" /></td>
+                    <td><button class="btn btn-primary btn-xs" ng-click="vm.saveZone(z)" ng-disabled="vm.busy">Kaydet</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</o3-modal>
+
+@section Scripts {
+    <script src="~/js/admin/floors.js" asp-append-version="true"></script>
+}
