@@ -22,7 +22,8 @@
   var FILLS = [
     { value: '#ffffff', label: 'Beyaz' }, { value: '#f8fafc', label: 'Açık gri' }, { value: '#e2e8f0', label: 'Gri' }, { value: '#eef4fb', label: 'Açık mavi' },
     { value: '#dbeafe', label: 'Mavi' }, { value: '#f0fdfa', label: 'Turkuaz' }, { value: '#fef9c3', label: 'Sarı' }, { value: '#fef2f2', label: 'Kırmızı' },
-    { value: '#f5f3ff', label: 'Mor' }, { value: '#334155', label: 'Koyu gri' }, { value: 'transparent', label: 'Saydam' }
+    { value: '#f5f3ff', label: 'Mor' }, { value: '#334155', label: 'Koyu gri' }, { value: 'transparent', label: 'Saydam' },
+    { value: 'hatch-red', label: 'Kırmızı tarama (kapalı alan)' }
   ];
   var STROKES = [
     { value: '#1e293b', label: 'Koyu' }, { value: '#94a3b8', label: 'Gri' }, { value: '#cbd5e1', label: 'Açık gri' }, { value: '#2f6db5', label: 'Mavi' },

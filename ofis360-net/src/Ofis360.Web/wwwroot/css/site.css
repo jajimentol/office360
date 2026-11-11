@@ -422,3 +422,9 @@ section.loading { opacity: .6; }
 .editor-side h2 { font-size: 16px; }
 .editor-side .field input, .editor-side .field select { width: 100%; }
 @media (max-width: 1200px) { .editor { grid-template-columns: 1fr; } .editor-side { position: static; max-height: none; } }
+
+/* Plan surukleyerek kaydirma */
+.plan-scroll.pannable { cursor: grab; }
+.plan-scroll.pannable .floor-svg .desk, .plan-scroll.pannable .floor-svg .room { cursor: pointer; }
+.plan-scroll.panning, .plan-scroll.panning * { cursor: grabbing !important; user-select: none; }
+.floor-svg .big-label { letter-spacing: .5px; paint-order: stroke; stroke: rgba(255,255,255,.85); stroke-width: 4px; }

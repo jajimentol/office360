@@ -37,6 +37,19 @@ public static class PalladiumPlan
     public static Rect CenterFromPx(double cx, double cy, double width, double height) =>
         new(ToPlan(cx, 'x'), ToPlan(cy, 'y'), (int)Math.Floor(width / Scale + 0.5), (int)Math.Floor(height / Scale + 0.5));
 
+    /// <summary>Mutfagin batisindaki kapali alan: kirmizi taramali tek kroki ogesi, uzerinde bu yazi.</summary>
+    public const string AnadoluAreaName = "Anadolu Bölge Müdürlüğü";
+
+    /// <summary>Kroki ogesinin dolgusu; arayuz bunu acik kirmizi tarama olarak cizer.</summary>
+    public const string HatchRedFill = "hatch-red";
+
+    /// <summary>Anadolu Bolge Mudurlugu alani: 36-A-04 + 36-A-03 + eski Galata yeri (mutfagin batisi).</summary>
+    public static readonly double[] AnadoluAreaPx = [650, 2600, 2222, 3210];
+
+    /// <summary>Galata'nin eski (36-A-02) ve yeni (36-B-04) konumu.</summary>
+    public static readonly double[] GalataOldPx = [1875, 2605, 2215, 3210];
+    public static readonly double[] GalataNewPx = [3830, 2605, 4210, 3210];
+
     public sealed record ZoneSpec(string Code, string Name, string Kind, double[] Px, bool WindowSide = false, bool Quiet = false, bool Reservable = true);
 
     public static readonly ZoneSpec[] Zones =
@@ -44,7 +57,8 @@ public static class PalladiumPlan
         new("A05", "A Kanadı · Açık Ofis (Batı)", "WORK", [650, 1010, 1320, 2570], WindowSide: true),
         new("B05", "B Kanadı · Açık Ofis (Doğu)", "WORK", [3544, 1010, 4214, 2570], WindowSide: true),
         // Ek Bina Faz 1 formu: bolge mudurlugu alanlari rezervasyona kapali, yalnizca bolge personeli kullanir.
-        new("A03", "A Kanadı · Bölge Müdürlüğü Ortak Alanı", "RESTRICTED", [1056, 2600, 1862, 3210], WindowSide: true, Reservable: false),
+        // Mutfagin batisi (36-A-04, 36-A-03 ve eski Galata yeri) Anadolu Bolge Mudurlugu'ne ait; rezervasyona kapali.
+        new("A03", AnadoluAreaName, "RESTRICTED", [1056, 2600, 1862, 3210], WindowSide: true, Reservable: false),
         new("B03", "B Kanadı · Bölge Müdürlüğü Ortak Alanı", "RESTRICTED", [3002, 2600, 3808, 3210], WindowSide: true, Reservable: false),
         new("AMT", "A Kanadı · Kuzey Toplantı", "MEETING", [1000, 505, 1667, 990], WindowSide: true),
         new("BMT", "B Kanadı · Kuzey Toplantı", "MEETING", [3197, 505, 3864, 990], WindowSide: true),
@@ -54,8 +68,9 @@ public static class PalladiumPlan
         new("COR", "Ana Koridor", "CORRIDOR", [700, 2435, 4160, 2575], Reservable: false),
         new("CEK", "Çekirdek · Asansör, Merdiven, WC", "CORE", [1667, 489, 3197, 2424], Reservable: false),
         new("TER", "Teras", "SOCIAL", [646, 220, 4218, 500], Reservable: false),
-        new("A04", "Bölge Müdürü (36-A-04)", "RESTRICTED", [650, 2600, 1042, 3210], Reservable: false),
-        new("B04", "Bölge Müdürü (36-B-04)", "RESTRICTED", [3830, 2605, 4210, 3210], Reservable: false),
+        new("A04", AnadoluAreaName, "RESTRICTED", [650, 2600, 1042, 3210], Reservable: false),
+        // Galata ile yer degistirdi: B04 kodu artik eski Galata yerini (Anadolu Bolge Mudurlugu icinde) tutar.
+        new("B04", AnadoluAreaName, "RESTRICTED", GalataOldPx, Reservable: false),
     ];
 
     public sealed record StyleSpec(string? Fill = null, string? Stroke = null, double? StrokeWidth = null, double? FontSize = null);
@@ -121,14 +136,12 @@ public static class PalladiumPlan
         Column(788, 2635),
         Column(861, 3153),
         Column(1647, 3153),
-        new("RESTRICTED", [652, 2600, 1036, 3210], "36-A-04 Bölge Müdürü"),
     ];
 
     private static readonly ElementSpec[] EastOnly =
     [
         new("RESTRICTED", [3204, 1392, 3480, 1520], "36-B-08 Depo"),
         new("RESTRICTED", [3204, 1532, 3480, 1878], "36-B-07 Server odası"),
-        new("RESTRICTED", [3830, 2605, 4210, 3210], "36-B-04 Bölge Müdürü"),
         HWall(3198, 3485, 1385),
         HWall(3198, 3485, 1525),
         VWall(3485, 1385, 1880, 10),
@@ -195,7 +208,6 @@ public static class PalladiumPlan
         new("TEXT", [3800, 1105, 4000, 1135], "B KANADI", Style: new StyleSpec(FontSize: 16, Stroke: "#1f5493")),
         new("TEXT", [700, 2450, 1000, 2475], "36-A-05 Ortak çalışma alanı", Style: new StyleSpec(FontSize: 11)),
         new("TEXT", [3550, 2450, 3850, 2475], "36-B-05 Ortak çalışma alanı", Style: new StyleSpec(FontSize: 11)),
-        new("TEXT", [1070, 2612, 1370, 2637], "36-A-03 Ortak çalışma alanı", Style: new StyleSpec(FontSize: 11)),
         new("TEXT", [3020, 2612, 3320, 2637], "36-B-03 Ortak çalışma alanı", Style: new StyleSpec(FontSize: 11)),
         new("TEXT", [2380, 240, 2500, 270], "KUZEY ↑", Style: new StyleSpec(FontSize: 12, Stroke: "#64748b")),
     ];
@@ -212,6 +224,7 @@ public static class PalladiumPlan
         .. CoreElements(),
         .. SouthCenter,
         .. Labels,
+        new("RESTRICTED", AnadoluAreaPx, AnadoluAreaName, Style: new StyleSpec(Fill: HatchRedFill, Stroke: "#f87171", FontSize: 22), Layer: 600),
     ];
 
     public sealed record DeskSpec(string Code, string ZoneCode, double Cx, double Cy, double W, double H, string[] Features, string? Notes = null);
@@ -265,13 +278,15 @@ public static class PalladiumPlan
         .. SouthCluster("PT36-B03", "B03", 6, MirrorX(1669), 2901, false),
     ];
 
+    public const string GalataNotes = "Misafir toplantı odası. 36-B-04 konumuna taşındı (eski yeri Anadolu Bölge Müdürlüğü'ne katıldı). Temsili isim.";
+
     public sealed record RoomSpec(string Code, string Name, string PlanLabel, int Capacity, double[] Px, string[] Features, string? Notes = null);
 
     public static readonly RoomSpec[] Rooms =
     [
         new("PT36-A09", "Boğaz", "36-A-09 Toplantı Odası", 12, [1010, 515, 1660, 985], ["SCREEN", "VIDEO", "WHITEBOARD", "DAYLIGHT"], "98\" ekran, terasa açılan kapı. Temsili isim; iş birimi resmi adı verecek."),
         new("PT36-B10", "Marmara", "36-B-10 Toplantı Odası", 12, [3204, 515, 3854, 985], ["SCREEN", "VIDEO", "WHITEBOARD", "DAYLIGHT"], "98\" ekran, terasa açılan kapı. Temsili isim."),
-        new("PT36-A02", "Galata", "36-A-02 Giriş Toplantı", 8, [1875, 2605, 2215, 3210], ["SCREEN", "WHITEBOARD"], "Giriş yanı misafir toplantı odası. Temsili isim."),
+        new("PT36-A02", "Galata", "36-B-04 Toplantı (eski 36-A-02)", 8, GalataNewPx, ["SCREEN", "WHITEBOARD"], GalataNotes),
         new("PT36-B02", "Haliç", "36-B-02 Giriş Toplantı", 8, [2649, 2605, 2989, 3210], ["SCREEN", "WHITEBOARD"], "Giriş yanı misafir toplantı odası. Temsili isim."),
         new("PT36-A08", "Ekip Odası A-1", "36-A-08 Yönetici ve Ekip Çalışma Odası", 5, [1332, 1008, 1660, 1432], ["SCREEN"], "65\" ekran. Yönetici odayı sahiplendiğinde yönetim kapatabilir."),
         new("PT36-A07", "Ekip Odası A-2", "36-A-07 Yönetici ve Ekip Çalışma Odası", 5, [1332, 1450, 1660, 1882], ["SCREEN"], "65\" ekran."),

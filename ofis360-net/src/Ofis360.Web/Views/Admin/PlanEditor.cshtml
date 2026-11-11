@@ -61,6 +61,7 @@
             <div class="plan-canvas" ng-style="{ width: (vm.zoom * 100) + '%', height: (vm.zoom * 100) + '%' }">
                 <svg class="floor-svg editor-svg" ng-attr-view_box="0 0 {{ vm.snap.floor.planWidth }} {{ vm.snap.floor.planHeight }}" ng-mousedown="vm.canvasDown($event)">
                     <defs>
+                        <pattern id="o3-p-hatch-red" width="14" height="14" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><rect width="14" height="14" fill="rgba(254, 226, 226, 0.78)"></rect><line x1="0" y1="0" x2="0" y2="14" stroke="rgba(248, 113, 113, 0.75)" stroke-width="4"></line></pattern>
                         <pattern id="ed-grid" ng-attr-width="{{ vm.grid * 5 }}" ng-attr-height="{{ vm.grid * 5 }}" patternUnits="userSpaceOnUse">
                             <path ng-attr-d="M {{ vm.grid * 5 }} 0 L 0 0 0 {{ vm.grid * 5 }}" fill="none" stroke="#e2e8f0" stroke-width="1"></path>
                         </pattern>
@@ -75,6 +76,7 @@
                         <line ng-repeat="l in e.lines" ng-attr-x1="{{ l.x1 }}" ng-attr-y1="{{ l.y1 }}" ng-attr-x2="{{ l.x2 }}" ng-attr-y2="{{ l.y2 }}" ng-attr-stroke="{{ e.s.stroke }}" stroke-width="1" opacity="0.7"></line>
                         <path ng-if="e.path" ng-attr-d="{{ e.path }}" ng-attr-fill="{{ e.s.stroke }}" opacity="0.75"></path>
                         <text ng-if="e.showLabel" ng-attr-x="{{ e.x + 10 }}" ng-attr-y="{{ e.y + 18 }}" font-size="11" font-weight="600" fill="#64748b">{{ e.label }}</text>
+                        <text ng-if="e.bigLabel" ng-attr-x="{{ e.cx }}" ng-attr-y="{{ e.bigY }}" ng-attr-font-size="{{ e.bigSize }}" font-weight="800" fill="#b91c1c" text-anchor="middle" dominant-baseline="middle">{{ e.bigLabel }}</text>
                     </g>
 
                     <g ng-repeat="r in vm.rooms track by r.id" class="ed-item" ng-class="{ selected: vm.isSel('room', r.id) }" ng-mousedown="vm.itemDown($event, 'room', r.id)">

@@ -47,6 +47,10 @@
     TERRACE: { fill: '#ecfdf5', stroke: '#86efac', strokeWidth: 2 },
     TEXT: { fill: 'transparent', stroke: 'transparent', strokeWidth: 0, fontSize: 14 }
   };
+  /** Kroki ogesi dolgusu "hatch-red" ise acik kirmizi tarama ile cizilir (kapali alanlar). */
+  var HATCH_RED = 'hatch-red';
+  var HATCH_PATTERN = '<pattern id="o3-p-hatch-red" width="14" height="14" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><rect width="14" height="14" fill="rgba(254, 226, 226, 0.78)"></rect><line x1="0" y1="0" x2="0" y2="14" stroke="rgba(248, 113, 113, 0.75)" stroke-width="4"></line></pattern>';
+
   var LABELLED = ['ROOM', 'CORRIDOR', 'KITCHEN', 'WC', 'RESTRICTED', 'ELEVATOR', 'STAIRS', 'TERRACE'];
   var ZONE_STYLE = {
     WORK: { fill: '#f8fafc', stroke: '#cbd5e1', label: '#64748b' },
@@ -86,6 +90,14 @@
     } else if (e.type === 'DOOR') {
       var rad = Math.min(e.width, 34);
       r.arc = 'M ' + e.x + ' ' + (e.y + e.height) + ' a ' + rad + ' ' + rad + ' 0 0 1 ' + rad + ' ' + (-rad);
+    } else if (e.type === 'RESTRICTED' && s.fill === HATCH_RED) {
+      // Kapali alan (orn. Anadolu Bolge Mudurlugu): acik kirmizi tarama, ortada buyuk etiket.
+      r.s = angular.extend({}, s, { fill: 'url(#o3-p-hatch-red)', stroke: s.stroke || '#f87171', strokeWidth: s.strokeWidth || 2 });
+      r.showLabel = false;
+      r.bigLabel = e.label;
+      r.bigSize = st.fontSize || 22;
+      // Etiket alanin ust seridine yazilir; alandaki masalarin altinda kalmaz.
+      r.bigY = e.y + r.bigSize + 10;
     } else if (e.type === 'RESTRICTED') {
       r.diag = 'M ' + e.x + ' ' + (e.y + e.height) + ' L ' + (e.x + e.width) + ' ' + e.y;
     } else if (e.type === 'TERRACE' && e.width >= 60 && e.height >= 36) {
@@ -125,7 +137,7 @@
 
   /** Plan duzenleyicisi ayni cizim kurallarini kullanir. */
   angular.module('ofis360').constant('planShapes', {
-    renderElement: renderElement, elementDefaults: ELEMENT_DEFAULTS, shortDesk: shortDesk, roomStyle: ROOM_STYLE
+    renderElement: renderElement, elementDefaults: ELEMENT_DEFAULTS, shortDesk: shortDesk, roomStyle: ROOM_STYLE, hatchPattern: HATCH_PATTERN, hatchRed: HATCH_RED
   });
 
   angular.module('ofis360').directive('o3FloorPlan', function () {
@@ -137,6 +149,7 @@
         '<defs>' +
         '  <pattern id="o3-p-closed" width="8" height="8" patternTransform="rotate(135)" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#e2e8f0"></rect><line x1="0" y1="0" x2="0" y2="8" stroke="#94a3b8" stroke-width="3"></line></pattern>' +
         '  <pattern id="o3-p-accessible" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#f5f3ff"></rect><circle cx="4" cy="4" r="1.6" fill="#a78bfa"></circle></pattern>' +
+        HATCH_PATTERN +
         '  <pattern id="o3-p-restricted" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><rect width="7" height="7" fill="#fef3c7"></rect><line x1="0" y1="0" x2="0" y2="7" stroke="#fbbf24" stroke-width="2.5"></line></pattern>' +
         '</defs>' +
         '<rect x="0" y="0" ng-attr-width="{{ plan.floor.planWidth }}" ng-attr-height="{{ plan.floor.planHeight }}" fill="#ffffff" rx="10"></rect>' +
@@ -152,6 +165,7 @@
         '  <circle ng-repeat="dot in e.dots" ng-attr-cx="{{ dot.cx }}" ng-attr-cy="{{ dot.cy }}" r="5" fill="#4ade80" opacity="0.55"></circle>' +
         '  <text ng-if="e.type === \'WC\'" ng-attr-x="{{ e.cx }}" ng-attr-y="{{ e.cy + 5 }}" text-anchor="middle" font-size="14" font-weight="600" fill="#4f46e5">WC</text>' +
         '  <text ng-if="e.showLabel" ng-attr-x="{{ e.x + 10 }}" ng-attr-y="{{ e.y + 18 }}" font-size="11" font-weight="600" fill="#64748b" class="no-pointer">{{ e.label }}</text>' +
+        '  <text ng-if="e.bigLabel" ng-attr-x="{{ e.cx }}" ng-attr-y="{{ e.bigY }}" ng-attr-font-size="{{ e.bigSize }}" font-weight="800" fill="#b91c1c" text-anchor="middle" dominant-baseline="middle" class="no-pointer big-label">{{ e.bigLabel }}</text>' +
         '</g>' +
         '<g ng-repeat="z in zones track by z.id">' +
         '  <rect ng-attr-x="{{ z.x }}" ng-attr-y="{{ z.y }}" ng-attr-width="{{ z.width }}" ng-attr-height="{{ z.height }}" rx="10" ng-attr-fill="{{ z.st.fill }}" ng-attr-stroke="{{ z.st.stroke }}" stroke-width="1.5"></rect>' +

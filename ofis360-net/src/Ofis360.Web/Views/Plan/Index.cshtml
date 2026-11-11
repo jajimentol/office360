@@ -50,29 +50,22 @@
             </div>
 
         </div>
-        <div class="feature-filters" role="group" aria-label="Özelliğe göre filtrele">
-            <span class="label">Özelliğe göre filtrele</span>
-            <button type="button" class="filter-chip" ng-repeat="f in vm.featureFilters" ng-class="{ active: vm.isFeatureActive(f.key) }"
-                    aria-pressed="{{ vm.isFeatureActive(f.key) }}" ng-click="vm.toggleFeature(f.key)">{{ f.label }}</button>
-            <button type="button" class="link-btn" ng-if="vm.activeFeatures.length" ng-click="vm.clearFeatures()">Filtreleri temizle</button>
-            <span class="muted small" ng-if="vm.activeFeatures.length">{{ vm.visibleDesks.length }} masa uyuyor</span>
-        </div>
         <div class="plan-wrap" ng-show="vm.view === 'plan'">
         <div class="zoom zoom-float">
             <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.zoomBy(-0.25)" aria-label="Uzaklaştır">−</button>
             <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.zoom = 1" title="Sığdır">{{ vm.zoom * 100 | number:0 }}%</button>
             <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.zoomBy(0.25)" aria-label="Yakınlaştır">+</button>
         </div>
-        <div class="plan-scroll" o3-fit-height="440" ng-class="{ loading: vm.loading }">
+        <div class="plan-scroll" o3-fit-height="440" o3-drag-pan ng-class="{ loading: vm.loading }">
             <div class="plan-canvas" ng-style="{ width: (vm.zoom * 100) + '%', height: (vm.zoom * 100) + '%' }">
-                <o3-floor-plan plan="vm.plan" selected-desk-id="vm.selectedDeskId" selected-room-id="vm.selectedRoomId" highlighted="vm.highlighted"
+                <o3-floor-plan plan="vm.plan" selected-desk-id="vm.selectedDeskId" selected-room-id="vm.selectedRoomId"
                                on-desk="vm.selectDesk(id)" on-room="vm.selectRoom(id)"></o3-floor-plan>
             </div>
             <div class="plan-empty" ng-if="!vm.plan && !vm.loading && !vm.error">Bu kat için plan bulunamadı.</div>
         </div>
         </div>
         <div class="desk-list" ng-if="vm.view === 'list'">
-            <p class="muted" ng-if="!vm.visibleDesks.length">Filtreye uyan masa bulunamadı. Filtreleri gevşetmeyi deneyin.</p>
+            <p class="muted" ng-if="!vm.visibleDesks.length">Bu katta masa yok.</p>
             <div ng-repeat="g in vm.deskGroups">
                 <span class="label">{{ g.zoneName }}</span>
                 <ul class="desk-grid">

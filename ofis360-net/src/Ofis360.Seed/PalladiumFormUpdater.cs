@@ -89,7 +89,9 @@ public static class PalladiumFormUpdater
             report.ZoneCreated = true;
         }
 
-        if (!await db.FloorPlanElements.AnyAsync(e => e.FloorId == floor.Id && e.Label == ClosedAreaLabel))
+        // Anadolu Bolge Mudurlugu guncellemesi uygulanmissa 36-B-04 artik Galata'dir; eski etiket geri eklenmez.
+        var anadoluApplied = await db.FloorPlanElements.AnyAsync(e => e.FloorId == floor.Id && e.Label == PalladiumPlan.AnadoluAreaName);
+        if (!anadoluApplied && !await db.FloorPlanElements.AnyAsync(e => e.FloorId == floor.Id && e.Label == ClosedAreaLabel))
         {
             var reference = await db.FloorPlanElements.AsNoTracking().FirstOrDefaultAsync(e => e.FloorId == floor.Id && e.Label == ReferenceLabel);
             db.FloorPlanElements.Add(new FloorPlanElement

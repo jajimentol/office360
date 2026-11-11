@@ -58,6 +58,12 @@ switch (command)
         PalladiumFormUpdater.PrintReport(Console.Out, report);
         return 0;
     }
+    case "palladium-anadolu":
+    {
+        await using var db = SeedSupport.CreateContext(connection);
+        PalladiumAnadoluUpdater.PrintReport(Console.Out, await PalladiumAnadoluUpdater.ApplyAsync(db, today));
+        return 0;
+    }
     case "settings":
     {
         await using var db = SeedSupport.CreateContext(connection);
@@ -134,6 +140,6 @@ switch (command)
         return 0;
     }
     default:
-        Console.WriteLine("Kullanım: dotnet run --project src/Ofis360.Seed -- <seed|settings|palladium|palladium-form|ek-bina-rules|ek-bina-rooms|demo-room-roles|demo-grades|demo-cast|scale|activity|buildings> [seçenekler]");
+        Console.WriteLine("Kullanım: dotnet run --project src/Ofis360.Seed -- <seed|settings|palladium|palladium-form|palladium-anadolu|ek-bina-rules|ek-bina-rooms|demo-room-roles|demo-grades|demo-cast|scale|activity|buildings> [seçenekler]");
         return command == "help" ? 0 : 1;
 }

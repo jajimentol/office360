@@ -302,4 +302,54 @@
       }
     };
   }]);
+
+  /**
+   * Yakinlastirilmis plani fareyle tutup surukleyerek kaydirma (pan). Kaydirma cubuklarina gerek kalmaz.
+   * 4 px'ten kisa hareket tiklama sayilir (masa/oda secimi calismaya devam eder); surukleme sonrasi tiklama yutulur.
+   */
+  angular.module('ofis360').directive('o3DragPan', ['$window', function ($window) {
+    return {
+      restrict: 'A',
+      link: function (scope, el) {
+        var box = el[0], start = null, panned = false;
+        function scrollable() { return box.scrollWidth > box.clientWidth + 1 || box.scrollHeight > box.clientHeight + 1; }
+        function updateCursor() { el.toggleClass('pannable', scrollable()); }
+        function onDown(evt) {
+          if (evt.button !== 0 || !scrollable()) return;
+          start = { x: evt.clientX, y: evt.clientY, left: box.scrollLeft, top: box.scrollTop };
+          panned = false;
+        }
+        function onMove(evt) {
+          if (!start) return;
+          var dx = evt.clientX - start.x, dy = evt.clientY - start.y;
+          if (!panned && Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+          if (!panned) { panned = true; el.addClass('panning'); }
+          box.scrollLeft = start.left - dx;
+          box.scrollTop = start.top - dy;
+          evt.preventDefault();
+        }
+        function onUp() {
+          if (!start) return;
+          start = null;
+          el.removeClass('panning');
+          if (panned) setTimeout(function () { panned = false; }, 0);
+        }
+        // Surukleme bittiginde gelen tiklama masa/oda secmesin.
+        function onClickCapture(evt) { if (panned) { evt.stopPropagation(); evt.preventDefault(); } }
+        box.addEventListener('mousedown', onDown);
+        box.addEventListener('click', onClickCapture, true);
+        $window.addEventListener('mousemove', onMove);
+        $window.addEventListener('mouseup', onUp);
+        var ro = $window.ResizeObserver ? new $window.ResizeObserver(updateCursor) : null;
+        if (ro) { ro.observe(box); if (box.firstElementChild) ro.observe(box.firstElementChild); }
+        scope.$on('$destroy', function () {
+          box.removeEventListener('mousedown', onDown);
+          box.removeEventListener('click', onClickCapture, true);
+          $window.removeEventListener('mousemove', onMove);
+          $window.removeEventListener('mouseup', onUp);
+          if (ro) ro.disconnect();
+        });
+      }
+    };
+  }]);
 })();

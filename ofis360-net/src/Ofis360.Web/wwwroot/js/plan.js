@@ -7,12 +7,6 @@
     AVAILABLE: 'Uygun', MINE: 'Sizin masanız', RESERVED: 'Dolu', CLOSED: 'Kullanıma kapalı',
     ACCESSIBLE: 'Erişilebilirlik için ayrılmış', RESTRICTED_BY_RULE: 'Kural gereği seçilemez'
   };
-  // Eski kat plani ile ayni ozellik filtreleri (masa ozellik anahtarlari).
-  var FEATURE_FILTERS = [
-    { key: 'WINDOW', label: 'Pencere yanı' }, { key: 'DUAL_MONITOR', label: 'Çift monitör' }, { key: 'DOCK', label: 'Dock istasyonu' },
-    { key: 'QUIET', label: 'Sessiz alan' }, { key: 'STANDING', label: 'Yükseklik ayarlı' }, { key: 'ERGONOMIC', label: 'Ergonomik' },
-    { key: 'ACCESSIBLE', label: 'Erişilebilir' }
-  ];
   var STATUS_LABELS = { BOOKED: 'Rezerve', CHECKED_IN: 'Check-in yapıldı', COMPLETED: 'Tamamlandı', CANCELLED: 'İptal edildi', NO_SHOW: 'Gelinmedi' };
 
   angular.module('ofis360').controller('PlanCtrl', ['$q', 'api', 'days', 'toast', 'urlState', 'currentUser',
@@ -26,35 +20,15 @@
       vm.canActForOthers = currentUser.canActForOthers;
       vm.target = null;
       vm.targetChanged = function () { load(); };
-      vm.featureFilters = FEATURE_FILTERS;
-      vm.activeFeatures = [];
       vm.view = 'plan';
-      vm.highlighted = null;
       vm.pick = { start: null, end: null };
       vm.roomForm = { title: '', purpose: PURPOSES[0], attendeeCount: 2 };
       var pendingRoomId = urlState.get('room');
       var mine = { upcomingDesks: [], upcomingRooms: [] };
       var roomAvailability = null;
 
-      /** Secili ozelliklerin hepsine sahip masalar vurgulanir, digerleri soluklasir (eski haritadaki davranis). */
-      vm.toggleFeature = function (key) {
-        var i = vm.activeFeatures.indexOf(key);
-        if (i >= 0) vm.activeFeatures.splice(i, 1); else vm.activeFeatures.push(key);
-        refreshFilter();
-      };
-      vm.clearFeatures = function () { vm.activeFeatures = []; refreshFilter(); };
-      vm.isFeatureActive = function (key) { return vm.activeFeatures.indexOf(key) >= 0; };
-      function refreshFilter() {
-        if (!vm.plan || !vm.activeFeatures.length) { vm.highlighted = null; vm.visibleDesks = vm.plan ? vm.plan.desks : []; groupDesks(); return; }
-        var map = {};
-        vm.visibleDesks = vm.plan.desks.filter(function (d) {
-          var ok = vm.activeFeatures.every(function (k) { return d.features.some(function (f) { return f.key === k; }); });
-          if (ok) map[d.id] = true;
-          return ok;
-        });
-        vm.highlighted = map;
-        groupDesks();
-      }
+      /** Liste gorunumu: masalar bolgelere gore gruplanir. */
+      function refreshFilter() { vm.visibleDesks = vm.plan ? vm.plan.desks : []; groupDesks(); }
       function groupDesks() {
         var groups = {}, order = [];
         (vm.visibleDesks || []).forEach(function (d) {
